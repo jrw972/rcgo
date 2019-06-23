@@ -31,8 +31,8 @@ struct RuneTableEntry {
 };
 
 struct Utf8Scanner {
-  Utf8Scanner(ByteStreamI* a_byte_stream, ErrorReporter* a_error_reporter)
-      : m_byte_stream(a_byte_stream) , m_error_reporter(a_error_reporter),
+  Utf8Scanner(ByteStreamI* a_byte_stream, ErrorList* a_error_list)
+      : m_byte_stream(a_byte_stream) , m_error_list(a_error_list),
         m_line(1) {}
 
   Runet Peek(size_t a_offset = 0);
@@ -42,7 +42,7 @@ struct Utf8Scanner {
 
  private:
   ByteStreamI* m_byte_stream;
-  ErrorReporter* m_error_reporter;
+  ErrorList* m_error_list;
   std::deque<Runet> m_buffer;
   unsigned int m_line;
 };
@@ -59,6 +59,8 @@ bool IsHexDigit(Runet r);
 
 void Append(std::string* s, Runet r);
 Runet FirstRune(const std::string& s);
+
+Error IllegalUtf8Sequence(const Location& a_location);
 
 }  // namespace rcgo
 

@@ -21,7 +21,7 @@ namespace rcgo {
 // package_source_directory_path/package_source_directory.
 Paths GetPackageSourceFilePaths(
     const std::string& package_source_directory_path,
-    DIR* package_source_directory, ErrorReporter* error_reporter);
+    DIR* package_source_directory, ErrorList* error_list);
 
 }  // namespace rcgo
 

@@ -13,8 +13,10 @@
 #include <string>
 #include <vector>
 
+#include "src/error.h"
 #include "src/location.h"
 #include "src/untyped_constant.h"
+#include "src/typed_constant.h"
 
 namespace rcgo {
 
@@ -24,149 +26,113 @@ struct Type;
 struct Function;
 }
 
-struct ErrorReporter;
-
 namespace value {
-
-struct complex64_t {
-  complex64_t();
-  complex64_t(float a_real, float a_imag);
-
-  float real() const { return m_real; }
-  float imag() const { return m_imag; }
-
-  complex64_t operator+(const complex64_t& a_other) const;
-  complex64_t operator-(const complex64_t& a_other) const;
-  complex64_t operator*(const complex64_t& a_other) const;
-  complex64_t operator/(const complex64_t& a_other) const;
-  complex64_t operator+() const;
-  complex64_t operator-() const;
-
-  bool operator==(const complex64_t& a_other) const;
-  bool operator!=(const complex64_t& a_other) const;
-
- private:
-  float m_real;
-  float m_imag;
-};
-
-std::ostream& operator<<(std::ostream& out, const complex64_t& val);
-
-struct complex128_t {
-  complex128_t();
-  complex128_t(double a_real, double a_imag);
-
-  double real() const { return m_real; }
-  double imag() const { return m_imag; }
-
-  complex128_t operator+(const complex128_t& a_other) const;
-  complex128_t operator-(const complex128_t& a_other) const;
-  complex128_t operator*(const complex128_t& a_other) const;
-  complex128_t operator/(const complex128_t& a_other) const;
-  complex128_t operator+() const;
-  complex128_t operator-() const;
-
-  bool operator==(const complex128_t& a_other) const;
-  bool operator!=(const complex128_t& a_other) const;
-
- private:
-  double m_real;
-  double m_imag;
-};
-
-std::ostream& operator<<(std::ostream& out, const complex128_t& val);
 
 struct Value {
   enum Kind {
     kUninitialized,
     kError,
-    kUntypedConstant,  // order matters
-    kTypedConstant,    // order matters
-    kFunction,
+
+    kFunction,  // TODO(jrw72): May be able to use kRValue instead.
     kLValue,
-    kRValue,           // order matters
     kType,
-    kVoid,
-    kList
+    kVoid,  // TODO(jrw72): May be able to use empty list instead.
+    kList,
+
+    kUntypedConstant,  // ordered for rvalue
+    kTypedConstant,    // ordered for rvalue
+    kRValue,           // ordered for rvalue
   };
 
   Value();
 
   static Value MakeError();
   static Value MakeUntypedConstant(UntypedConstant const & a_value);
-  static Value MakeFunction(type::Function const * a_type);
-  static Value MakeLValue(type::Type const * a_type);
-  static Value MakeRValue(type::Type const * a_type);
-  static Value MakeType(type::Type const * a_type);
+  static Value MakeFunction(type::Function const* a_type);
+  static Value MakeLValue(type::Type const* a_type);
+  static Value MakeRValue(type::Type const* a_type);
+  static Value MakeType(type::Type const* a_type);
 
   Kind kind() const { return m_kind; }
-  type::Type const * type() const { return m_type; }
+  type::Type const* type() const;
   UntypedConstant const & untyped_constant() const;
 
-  bool bool_value() const { return m_bool_value; }
-  std::string const & string_value() const { return m_string_value; }
-  complex64_t complex64_value() const { return m_complex64_value; }
-  complex128_t complex128_value() const { return m_complex128_value; }
-  float float32_value() const { return m_float32_value; }
-  double float64_value() const { return m_float64_value; }
-  int int_value() const { return m_int_value; }
-  int8_t int8_value() const { return m_int8_value; }
-  int16_t int16_value() const { return m_int16_value; }
-  int32_t int32_value() const { return m_int32_value; }
-  int64_t int64_value() const { return m_int64_value; }
-  unsigned int uint_value() const { return m_uint_value; }
-  uint8_t uint8_value() const { return m_uint8_value; }
-  uint16_t uint16_value() const { return m_uint16_value; }
-  uint32_t uint32_value() const { return m_uint32_value; }
-  uint64_t uint64_value() const { return m_uint64_value; }
-  unsigned int uintptr_value() const { return m_uintptr_value; }
+  // TODO(jrw972): Remove these.
+  bool bool_value() const { return m_typed_constant.bool_value(); }
+  std::string const & string_value() const { return m_typed_constant.string_value(); }
+  complex64_t complex64_value() const { return m_typed_constant.complex64_value(); }
+  complex128_t complex128_value() const { return m_typed_constant.complex128_value(); }
+  float float32_value() const { return m_typed_constant.float32_value(); }
+  double float64_value() const { return m_typed_constant.float64_value(); }
+  int int_value() const { return m_typed_constant.int_value(); }
+  int8_t int8_value() const { return m_typed_constant.int8_value(); }
+  int16_t int16_value() const { return m_typed_constant.int16_value(); }
+  int32_t int32_value() const { return m_typed_constant.int32_value(); }
+  int64_t int64_value() const { return m_typed_constant.int64_value(); }
+  unsigned int uint_value() const { return m_typed_constant.uint_value(); }
+  uint8_t uint8_value() const { return m_typed_constant.uint8_value(); }
+  uint16_t uint16_value() const { return m_typed_constant.uint16_value(); }
+  uint32_t uint32_value() const { return m_typed_constant.uint32_value(); }
+  uint64_t uint64_value() const { return m_typed_constant.uint64_value(); }
+  unsigned int uintptr_value() const { return m_typed_constant.uintptr_value(); }
 
   bool IsUninitialized() const;
   bool IsInitialized() const;
   bool IsError() const;
 
-  bool RequireConstant(ErrorReporter * error_reporter) const;
-  bool ConvertTo(type::Type const * type);
-
   // Operations.
-  static Value Posate(Location const & location, Value * x,
-                      ErrorReporter * error_reporter);
-  static Value Negate(Location const & location, Value * x,
-                      ErrorReporter * error_reporter);
-  static Value LogicNot(Location const & location, Value * x,
-                        ErrorReporter * error_reporter);
-  static Value BitNot(Location const & location, Value * x,
-                      ErrorReporter * error_reporter);
-  // Operations and implicit conversions.
-  static Value Add(Location const & location, Value * x, Value * y,
-                   ErrorReporter * error_reporter);
-  static Value Subtract(Location const & location, Value * x, Value * y,
-                        ErrorReporter * error_reporter);
-  static Value Multiply(Location const & location, Value * x, Value * y,
-                        ErrorReporter * error_reporter);
-  static Value Divide(Location const & location, Value * x, Value * y,
-                      ErrorReporter * error_reporter);
-  static Value Modulo(Location const & location, Value * x, Value * y,
-                      ErrorReporter * error_reporter);
-  static Value LeftShift(Location const & location, Value * x, Value * y,
-                         ErrorReporter * error_reporter);
-  static Value RightShift(Location const & location, Value * x, Value * y,
-                          ErrorReporter * error_reporter);
-  static Value BitAnd(Location const & location, Value * x, Value * y,
-                      ErrorReporter * error_reporter);
-  static Value BitAndNot(Location const & location, Value * x, Value * y,
-                         ErrorReporter * error_reporter);
-  static Value BitOr(Location const & location, Value * x, Value * y,
-                     ErrorReporter * error_reporter);
-  static Value BitXor(Location const & location, Value * x, Value * y,
-                      ErrorReporter * error_reporter);
-  static Value Equal(Location const & location, Value * x, Value * y,
-                     ErrorReporter * error_reporter);
 
-  static Value Call(Location const & location, Value * operand,
-                    std::vector<Value *> const & arguments,
+  // Uninitialized Values may be passed in as arguments.  They will be
+  // ignored when checking.
+
+  // These functions return an initialized Value when successful or
+  // partially successful and an uninitialized one otherwise.  These
+  // functions also populate a list of errors if an error is
+  // discovered.
+
+  // Some of these functions have arguments that are pointers to
+  // mutable objects so they can convert untyped constants to typed
+  // constants when necessary.  If a conversion is necessary but
+  // fails, the arguments are not changed and an error is reported.
+  // The arguments are not changed for any other reason.
+
+  static Value ConvertConstant(Value const & x, type::Type const* a_type);
+  static Value Posate(Location const & location, Value* x,
+                      ErrorList* error_list);
+  static Value Negate(Location const & location, Value* x,
+                      ErrorList* error_list);
+  static Value LogicNot(Location const & location, Value* x,
+                        ErrorList* error_list);
+  static Value BitNot(Location const & location, Value* x,
+                      ErrorList* error_list);
+  static Value Add(Location const & location, Value* x, Value* y,
+                   ErrorList* error_list);
+  static Value Subtract(Location const & location, Value* x, Value* y,
+                        ErrorList* error_list);
+  static Value Multiply(Location const & location, Value* x, Value* y,
+                        ErrorList* error_list);
+  static Value Divide(Location const & location, Value* x, Value* y,
+                      ErrorList* error_list);
+  static Value Modulo(Location const & location, Value* x, Value* y,
+                      ErrorList* error_list);
+  static Value LeftShift(Value* x, Value* y, ErrorList* error_list);
+  static Value RightShift(Location const & location, Value* x, Value* y,
+                          ErrorList* error_list);
+  static Value BitAnd(Location const & location, Value* x, Value* y,
+                      ErrorList* error_list);
+  static Value BitAndNot(Location const & location, Value* x, Value* y,
+                         ErrorList* error_list);
+  static Value BitOr(Location const & location, Value* x, Value* y,
+                     ErrorList* error_list);
+  static Value BitXor(Location const & location, Value* x, Value* y,
+                      ErrorList* error_list);
+  static Value Equal(Location const & location, Value* x, Value* y,
+                     ErrorList* error_list);
+
+  static Value Call(Location const & location, Value* operand,
+                    std::vector<Value*> const & arguments,
                     LocationList const & locations,
-                    ErrorReporter * error_reporter);
+                    ErrorList* error_list);
 
   bool operator==(Value const & y) const;
   bool operator!=(Value const & y) const;
@@ -174,48 +140,35 @@ struct Value {
  private:
   explicit Value(Kind a_kind);
   bool IsArithmetic() const;
+  bool IsComparable() const;
   bool IsSigned() const;
   bool IsInteger() const;
   bool IsZero() const;
   bool IsString() const;
   bool IsBoolean() const;
   bool IsCallable() const;
+  bool IsConstant() const;
+  bool IsRValueish() const;
+  static void IsAssignableFrom(Value* lhs, Value* rhs);
 
   // Explicit conversions and checks.
-  bool PromoteTo(Value const & other);
-  bool ToInteger();
   void Dereference();
+  static Value MakeTypedConstant(TypedConstant const & a_value);
+  static void Promote(Value* a_x, Value* a_y);
 
   Kind m_kind;
-  type::Type const * m_type;
+  type::Type const* m_type;
 
   UntypedConstant m_untyped_constant;
-
-  bool m_bool_value;
-  std::string m_string_value;
-  complex64_t m_complex64_value;
-  complex128_t m_complex128_value;
-  float m_float32_value;
-  double m_float64_value;
-  int m_int_value;
-  int8_t m_int8_value;
-  int16_t m_int16_value;
-  int32_t m_int32_value;
-  int64_t m_int64_value;
-  unsigned int m_uint_value;
-  uint8_t m_uint8_value;
-  uint16_t m_uint16_value;
-  uint32_t m_uint32_value;
-  uint64_t m_uint64_value;
-  unsigned int m_uintptr_value;
+  TypedConstant m_typed_constant;
 
   typedef std::vector<Value> ListType;
   ListType m_list;
-
-  friend struct ConvertVisitor;
 };
 
 std::ostream& operator<<(std::ostream & out, Value const & value);
+
+Error CannotBeUsedInAnExpression(Value const* x);
 
 }  // namespace value
 }  // namespace rcgo

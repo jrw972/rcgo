@@ -11,47 +11,50 @@
 
 namespace rcgo {
 namespace test {
+namespace {
+char const* path = "test path";
+}
 
 TEST_CASE("StringByteStream::Peek() on \"\"") {
-  StringByteStream seq("");
+  StringByteStream seq(path, "");
   Byte b = seq.Peek();
   REQUIRE(b == kEndByte);
 }
 
 TEST_CASE("StringByteStream::Consume() on \"\"") {
-  StringByteStream seq("");
+  StringByteStream seq(path, "");
   seq.Consume();
   Byte b = seq.Peek();
   REQUIRE(b == kEndByte);
 }
 
 TEST_CASE("StringByteStream::Peek() on \"hello\"") {
-  StringByteStream seq("hello");
+  StringByteStream seq(path, "hello");
   Byte b = seq.Peek();
   REQUIRE(b == 'h');
 }
 
 TEST_CASE("StringByteStream::Peek(1) on \"hello\"") {
-  StringByteStream seq("hello");
+  StringByteStream seq(path, "hello");
   Byte b = seq.Peek(1);
   REQUIRE(b == 'e');
 }
 
 TEST_CASE("StringByteStream::Peek(5) on \"hello\"") {
-  StringByteStream seq("hello");
+  StringByteStream seq(path, "hello");
   Byte b = seq.Peek(5);
   REQUIRE(b == kEndByte);
 }
 
 TEST_CASE("StringByteStream::Consume() on \"hello\"") {
-  StringByteStream seq("hello");
+  StringByteStream seq(path, "hello");
   seq.Consume();
   Byte b = seq.Peek();
   REQUIRE(b == 'e');
 }
 
 TEST_CASE("StringByteStream::Consume() all on \"hello\"") {
-  StringByteStream seq("hello");
+  StringByteStream seq(path, "hello");
   seq.Consume();
   seq.Consume();
   seq.Consume();
@@ -62,8 +65,8 @@ TEST_CASE("StringByteStream::Consume() all on \"hello\"") {
 }
 
 TEST_CASE("StringByteStream::path()") {
-  StringByteStream seq("hello");
-  REQUIRE(seq.Path() == NULL);
+  StringByteStream seq(path, "hello");
+  REQUIRE(seq.Path() == path);
 }
 
 TEST_CASE("FileByteStream::Peek() on /dev/null") {

@@ -32,6 +32,7 @@ struct Type {
   virtual void Accept(Visitor* visitor) const = 0;
   virtual const Type* UnderlyingType() const { return this; }
   virtual bool IsDefined() const { return false; }
+  virtual bool IsAlias() const { return false; }
   const Array* GetArray(int length) const;
   const Slice* GetSlice() const;
   const Map* GetMap(const Type* key_type) const;
@@ -343,6 +344,7 @@ struct Alias : public NamedType {
   const Type* UnderlyingType() const override {
     return m_type->UnderlyingType();
   }
+  bool IsAlias() const override { return true; }
  private:
   explicit Alias(const Type* a_type) : NamedType(a_type) {}
   ~Alias() {}
@@ -442,12 +444,13 @@ const T* Cast(const Type* type) {
 
 bool Identical(const Type* x, const Type* y);
 bool Different(const Type* x, const Type* y);
-bool Comparable(const Type* x);
+bool IsComparable(const Type* x);
 bool IsArithmetic(const Type* x);
 bool IsSigned(const Type* x);
 bool IsInteger(const Type* x);
 bool IsString(const Type* x);
 bool IsBoolean(const Type* x);
+Type const * Choose(Type const * x, Type const * y);
 
 }  // namespace type
 }  // namespace rcgo

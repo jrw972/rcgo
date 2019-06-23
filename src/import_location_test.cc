@@ -14,9 +14,9 @@ namespace rcgo {
 namespace test {
 
 TEST_CASE("ImportLocation::ImportLocation ()") {
-  ImportLocation il("url", location);
+  ImportLocation il("url", Location());
   REQUIRE(il.url == "url");
-  REQUIRE(il.location == location);
+  REQUIRE(il.location == Location());
 }
 
 }  // namespace test

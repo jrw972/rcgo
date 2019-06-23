@@ -15,7 +15,7 @@ namespace rcgo {
 
 // Returns the symbol for package.name or name.
 symbol::Symbol* ProcessQualifiedIdentifier(ast::Node* ast, const Block& block,
-                                   ErrorReporter* error_reporter);
+                                           ErrorList* error_list);
 
 }
 

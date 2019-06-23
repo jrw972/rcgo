@@ -18,7 +18,7 @@ namespace rcgo {
 // Process the definition of symbol.  Returns true if the symbol is
 // defined after processing.
 bool DefineSymbol(symbol::Symbol* symbol, Block* file_block,
-                  type::Factory* type_factory, ErrorReporter* error_reporter);
+                  type::Factory* type_factory, ErrorList* error_list);
 
 }  // namespace rcgo
 

@@ -12,26 +12,29 @@
 
 namespace rcgo {
 namespace test {
+namespace {
+char const* path = "test path";
+}
 
-#define PEEK_TEST(str, first) \
+#define PEEK_TEST(str, first)                                           \
   TEST_CASE("Utf8Scanner::peek() on \"" str "\"") {                     \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 1, &test::abort_handler);                      \
-    StringByteStream seq(str);                                          \
-    Utf8Scanner scanner(&seq, &er);                                     \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, str);                                    \
+    Utf8Scanner scanner(&seq, &el);                                     \
     Runet r = scanner.Peek();                                           \
     REQUIRE(r == first);                                                \
   }
 
-#define PEEK_TEST_ERROR(str, first) \
+#define PEEK_TEST_ERROR(str, first)                                     \
   TEST_CASE("Utf8Scanner::peek() on \"" str "\"") {                     \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 0, &test::abort_handler);                      \
-    StringByteStream seq(str);                                          \
-    Utf8Scanner scanner(&seq, &er);                                     \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, str);                                          \
+    Utf8Scanner scanner(&seq, &el);                                     \
     Runet r = scanner.Peek();                                           \
     REQUIRE(r == first);                                                \
-    REQUIRE(er.At(0) == std::string(IllegalUtf8Sequence(test::location))); \
+    REQUIRE(el.at(0) == IllegalUtf8Sequence(Location(path, 1)));               \
   }
 
 PEEK_TEST("\u0024", 0x24);
@@ -56,9 +59,9 @@ PEEK_TEST_ERROR("\xED\xA0\x80", kEndRune);
 
 TEST_CASE("Utf8::consume() on \"" "\u0024\u00A2\u20AC\U00010348" "\"") {
   std::stringstream ss;
-  ErrorReporter er(ss, 1, &test::abort_handler);
-  StringByteStream seq("\u0024\u00A2\u20AC\U00010348");
-  Utf8Scanner scanner(&seq, &er);
+  ErrorList el;
+  StringByteStream seq(path, "\u0024\u00A2\u20AC\U00010348");
+  Utf8Scanner scanner(&seq, &el);
   Runet r0 = scanner.Consume();
   Runet r1 = scanner.Consume();
   Runet r2 = scanner.Consume();
@@ -129,9 +132,9 @@ APPEND_TEST(0xDFFF, 0, PROTECT({ }));
 
 TEST_CASE("Utf8::consume() on \"\\n\"") {
   std::stringstream ss;
-  ErrorReporter er(ss, 1, &test::abort_handler);
-  StringByteStream seq("\n");
-  Utf8Scanner scanner(&seq, &er);
+  ErrorList el;
+  StringByteStream seq(path, "\n");
+  Utf8Scanner scanner(&seq, &el);
   Runet r0 = scanner.Consume();
   REQUIRE(r0 == '\n');
   REQUIRE(scanner.GetLocation().line == 2);
@@ -139,9 +142,9 @@ TEST_CASE("Utf8::consume() on \"\\n\"") {
 
 TEST_CASE("Utf8::consume(1) on \"ab\"") {
   std::stringstream ss;
-  ErrorReporter er(ss, 1, &test::abort_handler);
-  StringByteStream seq("ab");
-  Utf8Scanner scanner(&seq, &er);
+  ErrorList el;
+  StringByteStream seq(path, "ab");
+  Utf8Scanner scanner(&seq, &el);
   scanner.Consume(1);
   Runet r0 = scanner.Consume();
   REQUIRE(r0 == 'b');

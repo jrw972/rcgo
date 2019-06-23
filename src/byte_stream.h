@@ -26,13 +26,14 @@ struct ByteStreamI {
 };
 
 struct StringByteStream : public ByteStreamI {
-  explicit StringByteStream(const std::string& a_buffer)
-      : m_buffer(a_buffer), m_pos(0) {}
+  explicit StringByteStream(char const* a_path, const std::string& a_buffer)
+      : m_path(a_path), m_buffer(a_buffer), m_pos(0) {}
   Byte Peek(size_t offset = 0) override;
   Byte Consume() override;
-  const char* Path() const override { return NULL; }
+  const char* Path() const override { return m_path; }
 
  private:
+  char const* const m_path;
   std::string const m_buffer;
   size_t m_pos;
 };

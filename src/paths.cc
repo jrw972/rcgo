@@ -18,7 +18,7 @@ namespace rcgo {
 
 Paths GetPackageSourceFilePaths(
     const std::string& package_source_directory_path,
-    DIR* package_source_directory, ErrorReporter* error_reporter) {
+    DIR* package_source_directory, ErrorList* error_list) {
   Paths paths;
 
   // Build a list of file paths to consider for this package.
@@ -27,9 +27,7 @@ Paths GetPackageSourceFilePaths(
     struct dirent* dp = readdir(package_source_directory);
     if (dp == nullptr) {
       if (errno != 0) {
-        Perror e(std::string("Could not read ") + package_source_directory_path,
-                 errno);
-        error_reporter->Insert(e);  // NOT_COVERED
+        error_list->push_back(Perror (std::string("Could not read ") + package_source_directory_path, errno));;  // NOT_COVERED
         continue;  // NOT_COVERED
       }
       break;

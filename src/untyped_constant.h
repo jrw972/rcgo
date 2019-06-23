@@ -83,13 +83,10 @@ struct UntypedConstant {
   bool IsString() const;
   bool IsBoolean() const;
 
-  // Operations.
-  static UntypedConstant ToInteger(UntypedConstant const & x);
   static UntypedConstant Posate(UntypedConstant const & x);
   static UntypedConstant Negate(UntypedConstant const & x);
   static UntypedConstant LogicNot(UntypedConstant const & x);
   static UntypedConstant BitNot(UntypedConstant const & x);
-  // Operations and implicit conversions.
   static UntypedConstant Add(
       UntypedConstant const & x,
       UntypedConstant const & y);
@@ -136,6 +133,7 @@ struct UntypedConstant {
   static UntypedConstant PromoteTo(
       UntypedConstant const & a_x,
       Kind a_kind);
+  static UntypedConstant ToInteger(UntypedConstant const & x);
 
   Kind m_kind;
   bool m_boolean_value;

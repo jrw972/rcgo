@@ -13,18 +13,19 @@
 namespace rcgo {
 
 int _main(int argc, char** argv) {
-  struct ExitHandler : public TerminationHandlerI {
-    void Terminate() override { exit(EXIT_FAILURE); }
-  } exit_handler;
-
-  ErrorReporter error_reporter(std::cerr, 0, &exit_handler);
-  ArgumentParser argument_parser(argc, argv, &error_reporter);
-  CommandI* command = argument_parser.CommandLine();
-  if (!error_reporter.Empty()) {
-    exit_handler.Terminate();
+  ErrorList error_list;
+  ArgumentParser argument_parser(argc, argv);
+  CommandI* command = argument_parser.CommandLine(&error_list);
+  if (!error_list.empty()) {
+    ReportErrors(std::cerr, error_list);
+    return 1;
   }
-  command->Execute();
-  return error_reporter.Empty() ? 0 : 1;
+  command->Execute(&error_list);
+  if (!error_list.empty()) {
+    ReportErrors(std::cerr, error_list);
+    return 1;
+  }
+  return 0;
 }
 
 }  // namespace rcgo

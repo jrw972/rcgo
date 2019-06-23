@@ -11,15 +11,26 @@
 
 namespace rcgo {
 
-void ErrorReporter::Insert(const Error& error) {
-  std::stringstream str;
-  error.Print(str);
-  m_out << str.str();
-  m_errors.push_back(str.str());
-  if (m_limit != 0 && m_errors.size() >= m_limit) {
-    m_out.flush();
-    m_termination_handler->Terminate();
+// void ErrorReporter::Insert(const Error& error) {
+//   std::stringstream str;
+//   error.Print(str);
+//   m_out << str.str();
+//   m_errors.push_back(str.str());
+//   if (m_limit != 0 && m_errors.size() >= m_limit) {
+//     m_out.flush();
+//     m_termination_handler->Terminate();
+//   }
+// }
+
+void ReportErrors(std::ostream& out, ErrorList const& error_list) {
+  for (auto const& error : error_list) {
+    if (error.location != Location()) {
+      out << error.location << ": " << error.message.str();
+    } else {
+      out << error.message.str();
+    }
   }
+  out.flush();
 }
 
 }  // namespace rcgo

@@ -18,7 +18,7 @@
 namespace rcgo {
 
 struct Scanner {
-  Scanner(ByteStreamI* a_byte_stream, ErrorReporter* a_error_reporter);
+  Scanner(ByteStreamI* a_byte_stream, ErrorList* a_error_list);
   virtual ~Scanner();
   Token Peek(size_t a_offset = 0);
   Token Consume();
@@ -54,12 +54,27 @@ struct Scanner {
   void InterpretedStringLiteral();
 
   Utf8Scanner m_utf8_scanner;
-  ErrorReporter* m_error_reporter;
+  ErrorList* m_error_list;
   std::deque<Token> m_tokens;
   MapType m_keywords;
   MapType m_operators_delimiters;
   Token m_last_token;
 };
+
+Error StrayRune(const Location& a_location, const std::string& a_rune);
+Error UnterminatedGeneralComment(const Location& a_location);
+Error FloatingPointOverflow(const Location& a_location);
+Error ExpectedDecimalDigit(const Location& a_location);
+Error IncompleteRuneLiteral(const Location& a_location);
+Error EmptyRuneLiteral(const Location& a_location);
+Error ExtraCharactersInRuneLiteral(const Location& a_location);
+Error OctalValueOutOfRange(const Location& a_location);
+Error TooFewOctalDigitsInRuneLiteral(const Location& a_location);
+Error TooFewHexadecimalDigitsInRuneLiteral(const Location& a_location);
+Error InvalidUnicodeCodePoint(const Location& a_location);
+Error IllegalEscapeSequence(const Location& a_location);
+Error IncompleteStringLiteral(const Location& a_location);
+Error ExtraCharactersInToken(const Location& a_location);
 
 }  // namespace rcgo
 

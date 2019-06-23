@@ -413,7 +413,7 @@ bool Different(const Type* x, const Type* y) {
   return !Identical(x, y);
 }
 
-bool Comparable(const Type* x) {
+bool IsComparable(const Type* x) {
   struct Visitor : public DefaultVisitor {
     bool flag;
 
@@ -443,14 +443,14 @@ bool Comparable(const Type* x) {
                limit = type.FieldEnd();
            pos != limit; ++pos) {
         const symbol::Field* field = *pos;
-        if (!Comparable(field->type)) {
+        if (!IsComparable(field->type)) {
           return;
         }
       }
       flag = true;
     }
     void Visit(const Array& type) override {
-      flag = Comparable(type.element_type);
+      flag = IsComparable(type.element_type);
     }
   };
 
@@ -539,6 +539,26 @@ bool IsString(const Type* x) {
 
 bool IsBoolean(const Type* x) {
   return x->UnderlyingType() == &Bool::instance;
+}
+
+Type const * Choose(Type const * x, Type const * y) {
+  if (x->IsDefined()) {
+    return x;
+  }
+
+  if (y->IsDefined()) {
+    return y;
+  }
+
+  if (x->IsAlias()) {
+    return x;
+  }
+
+  if (y->IsAlias()) {
+    return y;
+  }
+
+  return x;
 }
 
 }  // namespace type

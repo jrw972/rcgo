@@ -1,6 +1,4 @@
-// Copyright 2018 The Contributors of rcgo
-// All Contributions are owned by their respective authors.
-
+// Copyright 201
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -10,6 +8,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <utility>
 
 #include "src/type.h"
 #include "src/utf8.h"
@@ -17,100 +16,51 @@
 namespace rcgo {
 namespace value {
 
-complex64_t::complex64_t() : m_real(0), m_imag(0) {}
+namespace {
 
-complex64_t::complex64_t(float a_real, float a_imag)
-    : m_real(a_real), m_imag(a_imag) {}
-
-complex64_t complex64_t::operator+(const complex64_t& a_other) const {
-  return complex64_t(m_real + a_other.m_real, m_imag + a_other.m_imag);
+Error cannotApply(const Location& a_location, char a_operator,
+                  value::Value const & a_value) {
+  Error error(a_location);
+  error.message << "error: cannot apply '" << a_operator << "' to " << a_value << std::endl;
+  return error;
 }
 
-complex64_t complex64_t::operator-(const complex64_t& a_other) const {
-  return complex64_t(m_real - a_other.m_real, m_imag - a_other.m_imag);
+Error cannotApply2(const Location& a_location, const std::string& a_operator,
+                   value::Value const & a_value1,
+                   value::Value const & a_value2) {
+  Error error(a_location);
+  error.message << "error: cannot apply '" << a_operator << "' to " << a_value1 << " and " << a_value2 << std::endl;
+  return error;
 }
 
-complex64_t complex64_t::operator*(const complex64_t& a_other) const {
-  return complex64_t(m_real * a_other.m_real - m_imag * a_other.m_imag,
-                     m_real * a_other.m_imag + m_imag * a_other.m_real);
+Error divisionByZero(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: division by zero" << std::endl;
+  return error;
 }
 
-complex64_t complex64_t::operator/(const complex64_t& a_other) const {
-  float denom =
-      a_other.m_real * a_other.m_real +
-      a_other.m_imag * a_other.m_imag;
-  return
-      complex64_t((m_real * a_other.m_real + m_imag * a_other.m_real) / denom,
-                  (m_imag * a_other.m_real - m_real * a_other.m_imag) / denom);
+Error operandCannotBeCalled(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: operand cannot be called" << std::endl;
+  return error;
 }
 
-complex64_t complex64_t::operator+() const {
-  return complex64_t(+m_real, +m_imag);
+Error callExpectsNArguments(
+    const Location& a_location, size_t a_expected, size_t a_actual) {
+  Error error(a_location);
+  error.message << "error: call expects " << a_expected << " arguments but received " << a_actual << std::endl;
+  return error;
 }
 
-complex64_t complex64_t::operator-() const {
-  return complex64_t(-m_real, -m_imag);
+Error cannotConvert(
+    const Location& a_location, value::Value const & a_value,
+    const type::Type* a_type) {
+  Error error(a_location);
+  error.message << "error: cannot convert " << a_value << " to " << a_type << std::endl;
+  return error;
 }
 
-bool complex64_t::operator==(const complex64_t& a_other) const {
-  return this->m_real == a_other.m_real && this->m_imag == a_other.m_imag;
-}
-
-bool complex64_t::operator!=(const complex64_t& a_other) const {
-  return !(*this == a_other);
-}
-
-std::ostream& operator<<(std::ostream& out, const complex64_t& val) {
-  out << val.real() <<(val.imag() >= 0 ? "+" : "") << val.imag() << 'i';
-  return out;
-}
-
-complex128_t::complex128_t() : m_real(0), m_imag(0) {}
-
-complex128_t::complex128_t(double a_real, double a_imag)
-    : m_real(a_real), m_imag(a_imag) {}
-
-complex128_t complex128_t::operator+(const complex128_t& a_other) const {
-  return complex128_t(m_real + a_other.m_real, m_imag + a_other.m_imag);
-}
-
-complex128_t complex128_t::operator-(const complex128_t& a_other) const {
-  return complex128_t(m_real - a_other.m_real, m_imag - a_other.m_imag);
-}
-
-complex128_t complex128_t::operator*(const complex128_t& a_other) const {
-  return complex128_t(m_real * a_other.m_real - m_imag * a_other.m_imag,
-                      m_real * a_other.m_imag + m_imag * a_other.m_real);
-}
-
-complex128_t complex128_t::operator/(const complex128_t& a_other) const {
-  float denom = a_other.m_real * a_other.m_real +
-      a_other.m_imag * a_other.m_imag;
-  return
-      complex128_t((m_real * a_other.m_real + m_imag * a_other.m_real) / denom,
-                   (m_imag * a_other.m_real - m_real * a_other.m_imag) / denom);
-}
-
-complex128_t complex128_t::operator+() const {
-  return complex128_t(+m_real, +m_imag);
-}
-
-complex128_t complex128_t::operator-() const {
-  return complex128_t(-m_real, -m_imag);
-}
-
-bool complex128_t::operator==(const complex128_t& a_other) const {
-  return this->m_real == a_other.m_real && this->m_imag == a_other.m_imag;
-}
-
-bool complex128_t::operator!=(const complex128_t& a_other) const {
-  return !(*this == a_other);
-}
-
-std::ostream& operator<<(std::ostream& out, const complex128_t& val) {
-  out << val.real() <<(val.imag() >= 0 ? "+" : "") << val.imag() << 'i';
-  return out;
-}
+}  // namespace
 
 Value::Value() : m_kind(kUninitialized), m_type(nullptr) {}
 
@@ -150,115 +100,100 @@ Value Value::MakeType(const type::Type* a_type) {
   return Value(v);
 }
 
+type::Type const * Value::type() const {
+  switch (m_kind) {
+    case kFunction:
+    case kLValue:
+    case kType:
+    case kRValue:
+      return m_type;
+    case kTypedConstant:
+      return m_typed_constant.type();
+    default:
+      return nullptr;
+  }
+}
+
 UntypedConstant const & Value::untyped_constant() const {
   assert(m_kind == kUntypedConstant);
   return m_untyped_constant;
 }
 
 bool Value::IsArithmetic() const {
-  switch (m_kind) {
-    case kUntypedConstant:
-      return m_untyped_constant.IsArithmetic();
-    case kTypedConstant:
-    case kLValue:
-    case kRValue:
-      return type::IsArithmetic(m_type);
-    default:
-      return false;
+  if (m_kind == kUntypedConstant) {
+    return m_untyped_constant.IsArithmetic();
   }
+  const type::Type* t = type();
+  if (t) {
+    return type::IsArithmetic(t);
+  }
+  return false;
+}
+
+bool Value::IsComparable() const {
+  if (m_kind == kUntypedConstant) {
+    return true;
+  }
+  const type::Type* t = type();
+  if (t) {
+    return type::IsComparable(t);
+  }
+  return false;
 }
 
 bool Value::IsSigned() const {
-  switch (m_kind) {
-    case kUntypedConstant:
-      return m_untyped_constant.IsSigned();
-    case kTypedConstant:
-    case kLValue:
-    case kRValue:
-      return type::IsSigned(m_type);
-    default:
-      return false;
+  if (m_kind == kUntypedConstant) {
+    return m_untyped_constant.IsSigned();
   }
+  const type::Type* t = type();
+  if (t) {
+    return type::IsSigned(t);
+  }
+  return false;
 }
 
 bool Value::IsInteger() const {
-  switch (m_kind) {
-    case kUntypedConstant:
-      return m_untyped_constant.IsInteger();
-    case kTypedConstant:
-    case kLValue:
-    case kRValue:
-      return type::IsInteger(m_type);
-    default:
-      return false;
+  if (m_kind == kUntypedConstant) {
+    return m_untyped_constant.IsInteger();
   }
+  const type::Type* t = type();
+  if (t) {
+    return type::IsInteger(t);
+  }
+  return false;
 }
 
 bool Value::IsZero() const {
-  struct Visitor : public type::DefaultVisitor {
-    explicit Visitor(const Value& a_x) : x(a_x), flag(false) {}
-    const Value& x;
-    bool flag;
-
-    void Visit(const type::Int8&) override    { flag = x.m_int8_value == 0; }
-    void Visit(const type::Int16&) override   { flag = x.m_int16_value == 0; }
-    void Visit(const type::Int32&) override   { flag = x.m_int32_value == 0; }
-    void Visit(const type::Int64&) override   { flag = x.m_int64_value == 0; }
-    void Visit(const type::Uint8&) override   { flag = x.m_uint8_value == 0; }
-    void Visit(const type::Uint16&) override  { flag = x.m_uint16_value == 0; }
-    void Visit(const type::Uint32&) override  { flag = x.m_uint32_value == 0; }
-    void Visit(const type::Uint64&) override  { flag = x.m_uint64_value == 0; }
-    void Visit(const type::Int&) override     { flag = x.m_int_value == 0; }
-    void Visit(const type::Uint&) override    { flag = x.m_uint_value == 0; }
-    void Visit(const type::Uintptr&) override { flag = x.m_uintptr_value == 0; }
-    void Visit(const type::Float32&) override { flag = x.m_float32_value == 0; }
-    void Visit(const type::Float64&) override { flag = x.m_float64_value == 0; }
-    void Visit(const type::Complex64&) override {
-      flag = x.m_complex64_value == complex64_t(0, 0);
-    }
-    void Visit(const type::Complex128&) override {
-      flag = x.m_complex128_value == complex128_t(0, 0);
-    }
-  };
-
   switch (m_kind) {
     case kUntypedConstant:
       return m_untyped_constant.IsZero();
     case kTypedConstant:
-      {
-        Visitor vis(*this);
-        m_type->UnderlyingType()->Accept(&vis);
-        return vis.flag;
-      }
+      return m_typed_constant.IsZero();
     default:
       return false;
   }
 }
 
 bool Value::IsString() const {
-  switch (m_kind) {
-    case kUntypedConstant:
-      return m_untyped_constant.IsString();
-    case kTypedConstant:
-    case kLValue:
-    case kRValue:
-      return type::IsString(m_type);
-    default:
-      return false;
+  if (m_kind == kUntypedConstant) {
+    return m_untyped_constant.IsString();
   }
+  const type::Type* t = type();
+  if (t) {
+    return type::IsString(t);
+  }
+  return false;
 }
 
 bool Value::IsBoolean() const {
-  switch (m_kind) {
-    case kUntypedConstant:
-      return m_untyped_constant.IsBoolean();
-    case kTypedConstant:
-    case kLValue:
-    case kRValue:
-      return type::IsBoolean(m_type);
-    default:
-      return false;
+  if (m_kind == kUntypedConstant) {
+    return m_untyped_constant.IsBoolean();
   }
+  const type::Type* t = type();
+  if (t) {
+    return type::IsBoolean(t);
+  }
+  return false;
 }
 
 bool Value::IsCallable() const {
@@ -270,379 +205,99 @@ bool Value::IsCallable() const {
   }
 }
 
-struct ConvertVisitor : public type::DefaultVisitor {
-  Value* value;
-  const type::Type* type;
-  bool flag;
-
-  explicit ConvertVisitor(Value* a_value, const type::Type* a_type)
-      : value(a_value)
-      , type(a_type)
-      , flag(false) {}
-
-  void Visit(const type::Bool&) override {
-    if (value->m_kind == Value::kUntypedConstant &&
-        value->m_untyped_constant.IsBoolean()) {
-      value->m_kind = Value::kTypedConstant;
-      value->m_bool_value = value->m_untyped_constant.boolean_value();
-      value->m_type = type;
-      flag = true;
-    }
-  }
-
-  void Visit(const type::String&) override {
-    if (value->m_kind == Value::kUntypedConstant &&
-        value->m_untyped_constant.IsString()) {
-      value->m_kind = Value::kTypedConstant;
-      value->m_string_value = value->m_untyped_constant.string_value();
-      value->m_type = type;
-      flag = true;
-    }
-  }
-
-  template <typename T>
-  static bool exact_check(const mpz_class& from, T to) {
-    return mpz_class(to) == from;
-  }
-
-  template <typename T>
-  static bool close_check(const mpf_class& from, T to) {
-    if (from == 0) {
-      return from == to;
-    }
-    mpf_class q = from / mpf_class(to);
-    return q > .5 && q < 1.5;
-  }
-
-#define CONVERT_TO_COMPLEX(Type, ValueMember, ValueType)                \
-  void Visit(const Type&) override                                      \
-  {                                                                     \
-    ValueType v;                                                        \
-    switch (value->m_kind)                                              \
-    {                                                                   \
-      case Value::kUntypedConstant:                                     \
-        switch (value->m_untyped_constant.kind()) {                     \
-          case UntypedConstant::kInteger:                               \
-            v = ValueType(value->m_untyped_constant.integer_value().get_d(), 0); \
-            if (exact_check(value->m_untyped_constant.integer_value(), v.real())) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          case UntypedConstant::kRune:                                \
-            v = ValueType(value->m_untyped_constant.rune_value().get_d(), 0); \
-            if (exact_check(value->m_untyped_constant.rune_value(), v.real())) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          case UntypedConstant::kFloat:                                 \
-            v = ValueType(value->m_untyped_constant.float_value().get_d(), 0); \
-            if (close_check(value->m_untyped_constant.float_value(), v.real())) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          case UntypedConstant::kComplex:                               \
-            v =                                                         \
-                ValueType(value->m_untyped_constant.complex_value().real().get_d(), \
-                          value->m_untyped_constant.complex_value().imag().get_d()); \
-            if (close_check(value->m_untyped_constant.complex_value().real(), v.real()) && \
-                close_check(value->m_untyped_constant.complex_value().imag(), v.imag())) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          default:                                                      \
-            break;                                                      \
-        }                                                               \
-        break;                                                          \
-      default:                                                          \
-        break;                                                          \
-    }                                                                   \
-  }
-
-  CONVERT_TO_COMPLEX(type::Complex64, m_complex64_value, complex64_t)
-  CONVERT_TO_COMPLEX(type::Complex128, m_complex128_value, complex128_t)
-
-#define CONVERT_TO_FLOAT(Type, ValueMember, ValueType)                  \
-  void Visit(const Type&) override                                      \
-  {                                                                     \
-    ValueType v;                                                        \
-    switch (value->m_kind)                                              \
-    {                                                                   \
-      case Value::kUntypedConstant:                                     \
-        switch (value->m_untyped_constant.kind()) {                     \
-          case UntypedConstant::kInteger:                               \
-            v = value->m_untyped_constant.integer_value().get_d();      \
-            if (exact_check(value->m_untyped_constant.integer_value(), v)) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          case UntypedConstant::kRune:                                  \
-            v = value->m_untyped_constant.rune_value().get_d();         \
-            if (exact_check(value->m_untyped_constant.rune_value(), v)) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          case UntypedConstant::kFloat:                                 \
-            v = value->m_untyped_constant.float_value().get_d();        \
-            if (close_check(value->m_untyped_constant.float_value(), v)) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          case UntypedConstant::kComplex:                               \
-            v = value->m_untyped_constant.complex_value().real().get_d();                  \
-            if (close_check(value->m_untyped_constant.complex_value().real(), v) &&        \
-                value->m_untyped_constant.complex_value().imag() == 0) {                   \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          default:                                                      \
-            break;                                                      \
-        }                                                               \
-        break;                                                          \
-      default:                                                          \
-        break;                                                          \
-    }                                                                   \
-  }
-
-  CONVERT_TO_FLOAT(type::Float32, m_float32_value, float)
-  CONVERT_TO_FLOAT(type::Float64, m_float64_value, double)
-
-#define CONVERT_TO_INT(Type, ValueMember, ValueType)                    \
-  void Visit(const Type&) override                                      \
-  {                                                                     \
-    ValueType v;                                                        \
-    switch (value->m_kind)                                              \
-    {                                                                   \
-      case Value::kUntypedConstant:                                     \
-        switch (value->m_untyped_constant.kind()) {                     \
-          case UntypedConstant::kInteger:                               \
-            v = value->m_untyped_constant.integer_value().get_si();     \
-            if (exact_check(value->m_untyped_constant.integer_value(), v)) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          case UntypedConstant::kRune:                                  \
-            v = value->m_untyped_constant.rune_value().get_si();        \
-            if (exact_check(value->m_untyped_constant.rune_value(), v)) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          case UntypedConstant::kFloat:                                 \
-            v = value->m_untyped_constant.float_value().get_si();       \
-            if (close_check(value->m_untyped_constant.float_value(), v)) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          case UntypedConstant::kComplex:                               \
-            v = value->m_untyped_constant.complex_value().real().get_si(); \
-            if (close_check(value->m_untyped_constant.complex_value().real(), v) && \
-                value->m_untyped_constant.complex_value().imag() == 0) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          default:                                                      \
-            break;                                                      \
-        }                                                               \
-        break;                                                          \
-      default:                                                          \
-        break;                                                          \
-    }                                                                   \
-  }
-
-  CONVERT_TO_INT(type::Int, m_int_value, int)
-  CONVERT_TO_INT(type::Int8, m_int8_value, int8_t)
-  CONVERT_TO_INT(type::Int16, m_int16_value, int16_t)
-  CONVERT_TO_INT(type::Int32, m_int32_value, int32_t)
-  CONVERT_TO_INT(type::Int64, m_int64_value, int64_t)
-
-#define CONVERT_TO_UINT(Type, ValueMember, ValueType)                   \
-  void Visit(const Type&) override                                      \
-  {                                                                     \
-    ValueType v;                                                        \
-    switch (value->m_kind)                                              \
-    {                                                                   \
-      case Value::kUntypedConstant:                                     \
-        switch (value->m_untyped_constant.kind()) {                     \
-          case UntypedConstant::kInteger:                               \
-            v = value->m_untyped_constant.integer_value().get_ui();     \
-            if (exact_check(value->m_untyped_constant.integer_value(), v)) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          case UntypedConstant::kRune:                                  \
-            v = value->m_untyped_constant.rune_value().get_ui();        \
-            if (exact_check(value->m_untyped_constant.rune_value(), v)) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          case UntypedConstant::kFloat:                                 \
-            v = value->m_untyped_constant.float_value().get_ui();       \
-            if (close_check(value->m_untyped_constant.float_value(), v)) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          case UntypedConstant::kComplex:                                         \
-            v = value->m_untyped_constant.complex_value().real().get_ui(); \
-            if (close_check(value->m_untyped_constant.complex_value().real(), v) && \
-                value->m_untyped_constant.complex_value().imag() == 0) { \
-              value->m_kind = Value::kTypedConstant;                    \
-              value->m_type = type;                                     \
-              value->ValueMember = v;                                   \
-              flag = true;                                              \
-            }                                                           \
-            break;                                                      \
-          default:                                                      \
-            break;                                                      \
-        }                                                               \
-        break;                                                          \
-      default:                                                          \
-        break;                                                          \
-    }                                                                   \
-  }
-
-  CONVERT_TO_UINT(type::Uint, m_uint_value, unsigned int)
-  CONVERT_TO_UINT(type::Uint8, m_uint8_value, uint8_t)
-  CONVERT_TO_UINT(type::Uint16, m_uint16_value, uint16_t)
-  CONVERT_TO_UINT(type::Uint32, m_uint32_value, uint32_t)
-  CONVERT_TO_UINT(type::Uint64, m_uint64_value, uint64_t)
-  CONVERT_TO_UINT(type::Uintptr, m_uintptr_value, unsigned int)
-};
-
-bool Value::ConvertTo(const type::Type* type) {
-  ConvertVisitor visitor(this, type);
-  type->UnderlyingType()->Accept(&visitor);
-  return visitor.flag;
-}
-
-bool Value::PromoteTo(const Value& other) {
-  // assert(IsArithmetic());
-  // assert(other.IsArithmetic());
-  assert(this->kind() <= other.kind());
-
-  if (this->kind() == other.kind()) {
-    return true;
-  }
-
-  if (other.kind() == Value::kTypedConstant) {
-    return this->ConvertTo(other.type());
-  }
-
-  abort();
-}
-
-bool Value::ToInteger() {
-  struct Visitor : public type::DefaultVisitor {
-    explicit Visitor(Value* a_value) : value(a_value) {}
-    Value* value;
-
-    void Visit(const type::Int8&) override {
-      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_int8_value));
-    }
-    void Visit(const type::Int16&) override {
-      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_int16_value));
-    }
-    void Visit(const type::Int32&) override {
-      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_int32_value));
-    }
-    void Visit(const type::Int64&) override {
-      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_int64_value));
-    }
-    void Visit(const type::Uint8&) override {
-      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_uint8_value));
-    }
-    void Visit(const type::Uint16&) override {
-      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_uint16_value));
-    }
-    void Visit(const type::Uint32&) override {
-      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_uint32_value));
-    }
-    void Visit(const type::Uint64&) override {
-      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_uint64_value));
-    }
-    void Visit(const type::Int&) override {
-      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_int_value));
-    }
-    void Visit(const type::Uint&) override {
-      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_uint_value));
-    }
-    void Visit(const type::Uintptr&) override {
-      *value = MakeUntypedConstant(UntypedConstant::MakeInteger(value->m_uintptr_value));
-    }
-  };
-
+bool Value::IsConstant() const {
   switch (m_kind) {
-    case Value::kUntypedConstant:
-      {
-        UntypedConstant uc = UntypedConstant::ToInteger(m_untyped_constant);
-        if (!uc.IsError()) {
-          m_untyped_constant = uc;
-          return true;
-        } else {
-          return false;
-        }
-      }
-    case Value::kTypedConstant:
-      if (type::IsInteger(m_type)) {
-        Visitor vis(this);
-        m_type->UnderlyingType()->Accept(&vis);
-        return true;
-      } else {
-        return false;
-      }
-      break;
+    case kUntypedConstant:
+    case kTypedConstant:
+      return true;
     default:
       return false;
-      break;
+  }
+}
+
+bool Value::IsRValueish() const {
+  switch (m_kind) {
+    case kUntypedConstant:
+    case kTypedConstant:
+    case kRValue:
+      return true;
+    default:
+      return false;
+  }
+}
+
+void Value::IsAssignableFrom(Value * lhs, Value * rhs) {
+  assert(lhs->IsInitialized());
+  assert(rhs->IsInitialized());
+  assert(!lhs->IsError());
+  assert(!rhs->IsError());
+
+  if (lhs->m_kind != kLValue) {
+    *lhs = MakeError();
+    return;
+  }
+
+  if (rhs->m_kind < kUntypedConstant) {
+    *rhs = MakeError();
+    return;
+  }
+
+  if (rhs->m_kind == kUntypedConstant) {
+    TypedConstant tc = TypedConstant::Make(lhs->type(), rhs->m_untyped_constant);
+    if (tc.IsError()) {
+      *rhs == MakeError();
+      return;
+    }
+    *rhs = MakeTypedConstant(tc);
+  }
+
+  if (!type::Identical(lhs->type(), rhs->type())) {
+    *rhs = MakeError();
+    return;
   }
 }
 
 void Value::Dereference() {
   if (m_kind == kLValue) {
     m_kind = kRValue;
+  }
+}
+
+Value Value::MakeTypedConstant(TypedConstant const & a_value) {
+  Value v;
+  v.m_kind = kTypedConstant;
+  v.m_typed_constant = a_value;
+  return v;
+}
+
+void Value::Promote(Value * a_x, Value * a_y) {
+  assert(a_x->IsInitialized());
+  assert(a_y->IsInitialized());
+  assert(!a_x->IsError());
+  assert(!a_y->IsError());
+  assert(a_x->m_kind >= kUntypedConstant);
+  assert(a_y->m_kind >= kUntypedConstant);
+
+  if (a_x->m_kind == a_y->m_kind) { return; }
+
+  if (a_x->m_kind > a_y->m_kind) {
+    std::swap(a_x, a_y);
+  }
+
+  if (a_x->m_kind == kUntypedConstant && a_y->m_kind == kTypedConstant) {
+    *a_x = MakeTypedConstant(TypedConstant::Make(a_y->type(), a_x->m_untyped_constant));
+  } else if (a_x->m_kind == kUntypedConstant && a_y->m_kind == kRValue) {
+    *a_x = MakeTypedConstant(TypedConstant::Make(a_y->type(), a_x->m_untyped_constant));
+    if (a_x->IsError()) { return; }
+    *a_x = MakeRValue(a_y->type());
+  } else if (a_x->m_kind == kTypedConstant && a_y->m_kind == kRValue) {
+    if (type::Identical(a_x->type(), a_y->type())) {
+      *a_x = MakeRValue(a_y->type());
+    } else {
+      *a_x = MakeError();
+    }
+  } else {
+    abort();
   }
 }
 
@@ -658,80 +313,37 @@ bool Value::IsError() const {
   return m_kind == kError;
 }
 
-bool Value::RequireConstant(ErrorReporter* error_reporter) const {
-  // TODO(jrw972):  Do this.
-  abort();
-  // switch (m_kind) {
-  //   case kBoolean:
-  //   case kString:
-  //   case kInteger:
-  //   case kRune:
-  //   case kFloat:
-  //   case kComplex:
-  //   case kTypedConstant:
-  //     return true;
-  //   default:
-  //     return false;
-  // }
-}
-
 // TODO(jrw972):  Handle overflow and underflow.
+
+Value Value::ConvertConstant(Value const & a_value,
+                            type::Type const * a_type) {
+  assert(a_value.IsInitialized());
+
+  if (a_value.IsError()) {
+    return a_value;
+  }
+
+  if (!a_value.IsConstant()) {
+    return MakeError();
+  }
+
+  UntypedConstant uc;
+  if (a_value.m_kind == kUntypedConstant) {
+    uc = a_value.m_untyped_constant;
+  } else {
+    uc = a_value.m_typed_constant.ToUntypedConstant();
+  }
+
+  TypedConstant tc = TypedConstant::Make(a_type, a_value.m_untyped_constant);
+  if (tc.IsError()) {
+    return MakeError();
+  }
+  return MakeTypedConstant(tc);
+}
 
 Value Value::Posate(
     Location const & location, Value * x,
-    ErrorReporter * error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, Value * a_value) : x(a_x), value(a_value) {}
-    Value const * x;
-    Value * value;
-
-    void Visit(const type::Int8&) override {
-      value->m_int8_value = +x->m_int8_value;
-    }
-    void Visit(const type::Int16&) override {
-      value->m_int16_value = +x->m_int16_value;
-    }
-    void Visit(const type::Int32&) override {
-      value->m_int32_value = +x->m_int32_value;
-    }
-    void Visit(const type::Int64&) override {
-      value->m_int64_value = +x->m_int64_value;
-    }
-    void Visit(const type::Uint8&) override {
-      value->m_uint8_value = +x->m_uint8_value;
-    }
-    void Visit(const type::Uint16&) override {
-      value->m_uint16_value = +x->m_uint16_value;
-    }
-    void Visit(const type::Uint32&) override {
-      value->m_uint32_value = +x->m_uint32_value;
-    }
-    void Visit(const type::Uint64&) override {
-      value->m_uint64_value = +x->m_uint64_value;
-    }
-    void Visit(const type::Int&) override {
-      value->m_int_value = +x->m_int_value;
-    }
-    void Visit(const type::Uint&) override {
-      value->m_uint_value = +x->m_uint_value;
-    }
-    void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = +x->m_uintptr_value;
-    }
-    void Visit(const type::Float32&) override {
-      value->m_float32_value = +x->m_float32_value;
-    }
-    void Visit(const type::Float64&) override {
-      value->m_float64_value = +x->m_float64_value;
-    }
-    void Visit(const type::Complex64&) override {
-      value->m_complex64_value = +x->m_complex64_value;
-    }
-    void Visit(const type::Complex128&) override {
-      value->m_complex128_value = +x->m_complex128_value;
-    }
-  };
-
+    ErrorList* error_list) {
   assert(x->IsInitialized());
 
   if (x->IsError()) {
@@ -739,92 +351,28 @@ Value Value::Posate(
   }
 
   if (!x->IsArithmetic()) {
-    error_reporter->Insert(CannotApply(location, '+', *x));
+    error_list->push_back(cannotApply(location, '+', *x));
     return Value::MakeError();
   }
 
   // TODO(jrw972):  Remove.
   x->Dereference();
 
-  Value v(x->m_kind);
-  switch (v.m_kind) {
+  switch (x->m_kind) {
     case Value::kUntypedConstant:
-      v.m_untyped_constant = UntypedConstant::Posate(x->m_untyped_constant);
-      break;
+      return MakeUntypedConstant(UntypedConstant::Posate(x->m_untyped_constant));
     case Value::kTypedConstant:
-      {
-        v.m_type = x->m_type;
-        Visitor vis(x, &v);
-        x->m_type->UnderlyingType()->Accept(&vis);
-      }
-      break;
+      return MakeTypedConstant(TypedConstant::Posate(x->m_typed_constant));
     case Value::kRValue:
-      {
-        v.m_type = x->m_type;
-      }
-      break;
+      return MakeRValue(x->type());
     default:
       abort();  // NOT_COVERED
   }
-
-  return v;
 }
 
 Value Value::Negate(
     Location const & location, Value * x,
-    ErrorReporter * error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, Value * a_value) : x(a_x), value(a_value) {}
-    Value const * x;
-    Value * value;
-
-    void Visit(const type::Int8&) override {
-      value->m_int8_value = -x->m_int8_value;
-    }
-    void Visit(const type::Int16&) override {
-      value->m_int16_value = -x->m_int16_value;
-    }
-    void Visit(const type::Int32&) override {
-      value->m_int32_value = -x->m_int32_value;
-    }
-    void Visit(const type::Int64&) override {
-      value->m_int64_value = -x->m_int64_value;
-    }
-    void Visit(const type::Uint8&) override {
-      value->m_uint8_value = -x->m_uint8_value;
-    }
-    void Visit(const type::Uint16&) override {
-      value->m_uint16_value = -x->m_uint16_value;
-    }
-    void Visit(const type::Uint32&) override {
-      value->m_uint32_value = -x->m_uint32_value;
-    }
-    void Visit(const type::Uint64&) override {
-      value->m_uint64_value = -x->m_uint64_value;
-    }
-    void Visit(const type::Int&) override {
-      value->m_int_value = -x->m_int_value;
-    }
-    void Visit(const type::Uint&) override {
-      value->m_uint_value = -x->m_uint_value;
-    }
-    void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = -x->m_uintptr_value;
-    }
-    void Visit(const type::Float32&) override {
-      value->m_float32_value = -x->m_float32_value;
-    }
-    void Visit(const type::Float64&) override {
-      value->m_float64_value = -x->m_float64_value;
-    }
-    void Visit(const type::Complex64&) override {
-      value->m_complex64_value = -x->m_complex64_value;
-    }
-    void Visit(const type::Complex128&) override {
-      value->m_complex128_value = -x->m_complex128_value;
-    }
-  };
-
+    ErrorList* error_list) {
   assert(x->IsInitialized());
 
   if (x->IsError()) {
@@ -832,40 +380,28 @@ Value Value::Negate(
   }
 
   if (!x->IsArithmetic()) {
-    error_reporter->Insert(CannotApply(location, '-', *x));
+    error_list->push_back(cannotApply(location, '-', *x));
     return Value::MakeError();
   }
 
   // TODO(jrw972):  Remove.
   x->Dereference();
 
-  Value v(x->m_kind);
-  switch (v.m_kind) {
+  switch (x->m_kind) {
     case Value::kUntypedConstant:
-      v.m_untyped_constant = UntypedConstant::Negate(x->m_untyped_constant);
-      break;
+      return MakeUntypedConstant(UntypedConstant::Negate(x->m_untyped_constant));
     case Value::kTypedConstant:
-      {
-        v.m_type = x->m_type;
-        Visitor vis(x, &v);
-        x->m_type->UnderlyingType()->Accept(&vis);
-      }
-      break;
+      return MakeTypedConstant(TypedConstant::Negate(x->m_typed_constant));
     case Value::kRValue:
-      {
-        v.m_type = x->m_type;
-      }
-      break;
+      return MakeRValue(x->type());
     default:
       abort();  // NOT_COVERED
   }
-
-  return v;
 }
 
 Value Value::LogicNot(
     Location const & location, Value * x,
-    ErrorReporter * error_reporter) {
+    ErrorList* error_list) {
   assert(x->IsInitialized());
 
   if (x->IsError()) {
@@ -873,75 +409,28 @@ Value Value::LogicNot(
   }
 
   if (!x->IsBoolean()) {
-    error_reporter->Insert(CannotApply(location, '!', *x));
+    error_list->push_back(cannotApply(location, '!', *x));
     return Value::MakeError();
   }
 
   // TODO(jrw972):  Remove.
   x->Dereference();
 
-  Value v(x->m_kind);
-  switch (v.m_kind) {
+  switch (x->m_kind) {
     case Value::kUntypedConstant:
-      v.m_untyped_constant = UntypedConstant::LogicNot(x->m_untyped_constant);
-      break;
+      return MakeUntypedConstant(UntypedConstant::LogicNot(x->m_untyped_constant));
     case Value::kTypedConstant:
-      v.m_bool_value = !x->m_bool_value;
-      v.m_type = x->m_type;
-      break;
+      return MakeTypedConstant(TypedConstant::LogicNot(x->m_typed_constant));
     case Value::kRValue:
-      v.m_type = x->m_type;
-      break;
+      return MakeRValue(x->type());
     default:
       abort();  // NOT_COVERED
   }
-
-  return v;
 }
 
 Value Value::BitNot(
     Location const & location, Value * x,
-    ErrorReporter * error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, Value * a_value) : x(a_x), value(a_value) {}
-    Value const * x;
-    Value * value;
-
-    void Visit(const type::Int8&) override {
-      value->m_int8_value = ~x->m_int8_value;
-    }
-    void Visit(const type::Int16&) override {
-      value->m_int16_value = ~x->m_int16_value;
-    }
-    void Visit(const type::Int32&) override {
-      value->m_int32_value = ~x->m_int32_value;
-    }
-    void Visit(const type::Int64&) override {
-      value->m_int64_value = ~x->m_int64_value;
-    }
-    void Visit(const type::Uint8&) override {
-      value->m_uint8_value = ~x->m_uint8_value;
-    }
-    void Visit(const type::Uint16&) override {
-      value->m_uint16_value = ~x->m_uint16_value;
-    }
-    void Visit(const type::Uint32&) override {
-      value->m_uint32_value = ~x->m_uint32_value;
-    }
-    void Visit(const type::Uint64&) override {
-      value->m_uint64_value = ~x->m_uint64_value;
-    }
-    void Visit(const type::Int&) override {
-      value->m_int_value = ~x->m_int_value;
-    }
-    void Visit(const type::Uint&) override {
-      value->m_uint_value = ~x->m_uint_value;
-    }
-    void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = ~x->m_uintptr_value;
-    }
-  };
-
+    ErrorList* error_list) {
   assert(x->IsInitialized());
 
   if (x->IsError()) {
@@ -949,97 +438,28 @@ Value Value::BitNot(
   }
 
   if (!x->IsInteger()) {
-    error_reporter->Insert(CannotApply(location, '~', *x));
+    error_list->push_back(cannotApply(location, '~', *x));
     return Value::MakeError();
   }
 
   // TODO(jrw972):  Remove.
   x->Dereference();
 
-  Value v(x->m_kind);
-  switch (v.m_kind) {
+  switch (x->m_kind) {
     case Value::kUntypedConstant:
-      v.m_untyped_constant = UntypedConstant::BitNot(x->m_untyped_constant);
-      break;
+      return MakeUntypedConstant(UntypedConstant::BitNot(x->m_untyped_constant));
     case Value::kTypedConstant:
-      {
-        v.m_type = x->m_type;
-        Visitor vis(x, &v);
-        x->m_type->UnderlyingType()->Accept(&vis);
-      }
-      break;
+      return MakeTypedConstant(TypedConstant::BitNot(x->m_typed_constant));
     case Value::kRValue:
-      {
-        v.m_type = x->m_type;
-      }
-      break;
+      return MakeRValue(x->type());
     default:
       abort();  // NOT_COVERED
   }
-
-  return v;
 }
 
 Value Value::Add(
     Location const & location, Value * x, Value * y,
-    ErrorReporter * error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
-        : x(a_x), y(a_y), value(a_value) {}
-    Value const * x;
-    Value const * y;
-    Value * value;
-
-    void Visit(const type::Int8&) override {
-      value->m_int8_value = x->m_int8_value + y->m_int8_value;
-    }
-    void Visit(const type::Int16&) override {
-      value->m_int16_value = x->m_int16_value + y->m_int16_value;
-    }
-    void Visit(const type::Int32&) override {
-      value->m_int32_value = x->m_int32_value + y->m_int32_value;
-    }
-    void Visit(const type::Int64&) override {
-      value->m_int64_value = x->m_int64_value + y->m_int64_value;
-    }
-    void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x->m_uint8_value + y->m_uint8_value;
-    }
-    void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x->m_uint16_value + y->m_uint16_value;
-    }
-    void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x->m_uint32_value + y->m_uint32_value;
-    }
-    void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x->m_uint64_value + y->m_uint64_value;
-    }
-    void Visit(const type::Int&) override {
-      value->m_int_value = x->m_int_value + y->m_int_value;
-    }
-    void Visit(const type::Uint&) override {
-      value->m_uint_value = x->m_uint_value + y->m_uint_value;
-    }
-    void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x->m_uintptr_value + y->m_uintptr_value;
-    }
-    void Visit(const type::Float32&) override {
-      value->m_float32_value = x->m_float32_value + y->m_float32_value;
-    }
-    void Visit(const type::Float64&) override {
-      value->m_float64_value = x->m_float64_value + y->m_float64_value;
-    }
-    void Visit(const type::Complex64&) override {
-      value->m_complex64_value = x->m_complex64_value + y->m_complex64_value;
-    }
-    void Visit(const type::Complex128&) override {
-      value->m_complex128_value = x->m_complex128_value + y->m_complex128_value;
-    }
-    void Visit(const type::String&) override {
-      value->m_string_value = x->m_string_value + y->m_string_value;
-    }
-  };
-
+    ErrorList* error_list) {
   assert(x->IsInitialized());
   assert(y->IsInitialized());
 
@@ -1051,117 +471,38 @@ Value Value::Add(
        (x->IsString() && y->IsString()))) {
     // TODO(jrw972):  Make this check and other look at the left and right
     // independently.
-    error_reporter->Insert(CannotApply2(location, "+", *x, *y));
+    error_list->push_back(cannotApply2(location, "+", *x, *y));
     return Value::MakeError();
   }
 
-  if (x->m_kind < y->m_kind) {
-    if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "+", *x, *y));
-      return Value::MakeError();
-    }
-  } else if (y->m_kind < x->m_kind) {
-    if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "+", *x, *y));
-      return Value::MakeError();
-    }
-  }
+  Promote(x, y);
+  if (x->IsError()) { return *x; }
+  if (y->IsError()) { return *y; }
+  // TODO(jrw972):  Check that all return MakeError() use the error_reporter.
 
   // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  Value v(x->m_kind);
-  switch (v.m_kind) {
+  switch (x->m_kind) {
     case kUntypedConstant:
-      v.m_untyped_constant = UntypedConstant::Add(x->m_untyped_constant, y->m_untyped_constant);
-      break;
+      return MakeUntypedConstant(UntypedConstant::Add(x->m_untyped_constant, y->m_untyped_constant));
     case Value::kTypedConstant:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "+", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
-        Visitor vis(x, y, &v);
-        x->m_type->UnderlyingType()->Accept(&vis);
-      }
-      break;
+      return MakeTypedConstant(TypedConstant::Add(x->m_typed_constant, y->m_typed_constant));
     case Value::kRValue:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "+", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
+      if (type::Identical(x->m_type, y->m_type) &&
+          ((type::IsString(x->m_type) && type::IsString(y->m_type)) ||
+           (type::IsArithmetic(x->m_type) && type::IsArithmetic(y->m_type)))) {
+        return MakeRValue(type::Choose(x->m_type, y->m_type));
       }
-      break;
     default:
-      abort();  // NOT_COVERED
+      return MakeError();
   }
-
-  return v;
 }
 
 Value Value::Subtract(
     Location const & location, Value * x, Value * y,
-    ErrorReporter* error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
-        : x(a_x)
-        , y(a_y)
-        , value(a_value) {}
-    Value const * x;
-    Value const * y;
-    Value * value;
-
-    void Visit(const type::Int8&) override {
-      value->m_int8_value = x->m_int8_value - y->m_int8_value;
-    }
-    void Visit(const type::Int16&) override {
-      value->m_int16_value = x->m_int16_value - y->m_int16_value;
-    }
-    void Visit(const type::Int32&) override {
-      value->m_int32_value = x->m_int32_value - y->m_int32_value;
-    }
-    void Visit(const type::Int64&) override {
-      value->m_int64_value = x->m_int64_value - y->m_int64_value;
-    }
-    void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x->m_uint8_value - y->m_uint8_value;
-    }
-    void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x->m_uint16_value - y->m_uint16_value;
-    }
-    void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x->m_uint32_value - y->m_uint32_value;
-    }
-    void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x->m_uint64_value - y->m_uint64_value;
-    }
-    void Visit(const type::Int&) override {
-      value->m_int_value = x->m_int_value - y->m_int_value;
-    }
-    void Visit(const type::Uint&) override {
-      value->m_uint_value = x->m_uint_value - y->m_uint_value;
-    }
-    void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x->m_uintptr_value - y->m_uintptr_value;
-    }
-    void Visit(const type::Float32&) override {
-      value->m_float32_value = x->m_float32_value - y->m_float32_value;
-    }
-    void Visit(const type::Float64&) override {
-      value->m_float64_value = x->m_float64_value - y->m_float64_value;
-    }
-    void Visit(const type::Complex64&) override {
-      value->m_complex64_value = x->m_complex64_value - y->m_complex64_value;
-    }
-    void Visit(const type::Complex128&) override {
-      value->m_complex128_value = x->m_complex128_value - y->m_complex128_value;
-    }
-  };
-
+    ErrorList* error_list) {
   assert(x->IsInitialized());
   assert(y->IsInitialized());
 
@@ -1170,117 +511,35 @@ Value Value::Subtract(
   }
 
   if (!(x->IsArithmetic() && y->IsArithmetic())) {
-    error_reporter->Insert(CannotApply2(location, "-", *x, *y));
+    error_list->push_back(cannotApply2(location, "-", *x, *y));
     return Value::MakeError();
   }
 
-  if (x->m_kind < y->m_kind) {
-    if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "-", *x, *y));
-      return Value::MakeError();
-    }
-  } else if (y->m_kind < x->m_kind) {
-    if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "-", *x, *y));
-      return Value::MakeError();
-    }
-  }
+  Promote(x, y);
+  if (x->IsError()) { return *x; }
+  if (y->IsError()) { return *y; }
 
   // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  Value v(x->m_kind);
-  switch (v.m_kind) {
+  switch (x->m_kind) {
     case Value::kUntypedConstant:
-      v.m_untyped_constant = UntypedConstant::Subtract(x->m_untyped_constant, y->m_untyped_constant);
-      break;
+      return MakeUntypedConstant(UntypedConstant::Subtract(x->m_untyped_constant, y->m_untyped_constant));
     case Value::kTypedConstant:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "-", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
-        Visitor vis(x, y, &v);
-        x->m_type->UnderlyingType()->Accept(&vis);
-      }
-      break;
+      return MakeTypedConstant(TypedConstant::Subtract(x->m_typed_constant, y->m_typed_constant));
     case Value::kRValue:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "-", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
+      if (type::Identical(x->m_type, y->m_type)) {
+        return MakeRValue(type::Choose(x->m_type, y->m_type));
       }
-      break;
     default:
-      abort();  // NOT_COVERED
+      return MakeError();
   }
-
-  return v;
 }
 
 Value Value::Multiply(
     Location const & location, Value * x, Value * y,
-    ErrorReporter* error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
-        : x(a_x)
-        , y(a_y)
-        , value(a_value) {}
-    Value const * x;
-    Value const * y;
-    Value * value;
-
-    void Visit(const type::Int8&) override {
-      value->m_int8_value = x->m_int8_value * y->m_int8_value;
-    }
-    void Visit(const type::Int16&) override {
-      value->m_int16_value = x->m_int16_value * y->m_int16_value;
-    }
-    void Visit(const type::Int32&) override {
-      value->m_int32_value = x->m_int32_value * y->m_int32_value;
-    }
-    void Visit(const type::Int64&) override {
-      value->m_int64_value = x->m_int64_value * y->m_int64_value;
-    }
-    void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x->m_uint8_value * y->m_uint8_value;
-    }
-    void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x->m_uint16_value * y->m_uint16_value;
-    }
-    void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x->m_uint32_value * y->m_uint32_value;
-    }
-    void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x->m_uint64_value * y->m_uint64_value;
-    }
-    void Visit(const type::Int&) override {
-      value->m_int_value = x->m_int_value * y->m_int_value;
-    }
-    void Visit(const type::Uint&) override {
-      value->m_uint_value = x->m_uint_value * y->m_uint_value;
-    }
-    void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x->m_uintptr_value * y->m_uintptr_value;
-    }
-    void Visit(const type::Float32&) override {
-      value->m_float32_value = x->m_float32_value * y->m_float32_value;
-    }
-    void Visit(const type::Float64&) override {
-      value->m_float64_value = x->m_float64_value * y->m_float64_value;
-    }
-    void Visit(const type::Complex64&) override {
-      value->m_complex64_value = x->m_complex64_value * y->m_complex64_value;
-    }
-    void Visit(const type::Complex128&) override {
-      value->m_complex128_value = x->m_complex128_value * y->m_complex128_value;
-    }
-  };
-
+    ErrorList* error_list) {
   assert(x->IsInitialized());
   assert(y->IsInitialized());
 
@@ -1289,116 +548,35 @@ Value Value::Multiply(
   }
 
   if (!(x->IsArithmetic() && y->IsArithmetic())) {
-    error_reporter->Insert(CannotApply2(location, "*", *x, *y));
+    error_list->push_back(cannotApply2(location, "*", *x, *y));
     return Value::MakeError();
   }
 
-  if (x->m_kind < y->m_kind) {
-    if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "*", *x, *y));
-      return Value::MakeError();
-    }
-  } else if (y->m_kind < x->m_kind) {
-    if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "*", *x, *y));
-      return Value::MakeError();
-    }
-  }
+  Promote(x, y);
+  if (x->IsError()) { return *x; }
+  if (y->IsError()) { return *y; }
 
   // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  Value v(x->m_kind);
-  switch (v.m_kind) {
+  switch (x->m_kind) {
     case Value::kUntypedConstant:
-      v.m_untyped_constant = UntypedConstant::Multiply(x->m_untyped_constant, y->m_untyped_constant);
-      break;
+      return MakeUntypedConstant(UntypedConstant::Multiply(x->m_untyped_constant, y->m_untyped_constant));
     case Value::kTypedConstant:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "*", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
-        Visitor vis(x, y, &v);
-        x->m_type->UnderlyingType()->Accept(&vis);
-      }
-      break;
+      return MakeTypedConstant(TypedConstant::Multiply(x->m_typed_constant, y->m_typed_constant));
     case Value::kRValue:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "*", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
+      if (type::Identical(x->m_type, y->m_type)) {
+        return MakeRValue(type::Choose(x->m_type, y->m_type));
       }
-      break;
     default:
-      abort();  // NOT_COVERED
+      return MakeError();
   }
-  return v;
 }
 
 Value Value::Divide(
     Location const & location, Value * x, Value * y,
-    ErrorReporter* error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
-        : x(a_x)
-        , y(a_y)
-        , value(a_value) {}
-    Value const * x;
-    Value const * y;
-    Value * value;
-
-    void Visit(const type::Int8&) override {
-      value->m_int8_value = x->m_int8_value / y->m_int8_value;
-    }
-    void Visit(const type::Int16&) override {
-      value->m_int16_value = x->m_int16_value / y->m_int16_value;
-    }
-    void Visit(const type::Int32&) override {
-      value->m_int32_value = x->m_int32_value / y->m_int32_value;
-    }
-    void Visit(const type::Int64&) override {
-      value->m_int64_value = x->m_int64_value / y->m_int64_value;
-    }
-    void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x->m_uint8_value / y->m_uint8_value;
-    }
-    void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x->m_uint16_value / y->m_uint16_value;
-    }
-    void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x->m_uint32_value / y->m_uint32_value;
-    }
-    void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x->m_uint64_value / y->m_uint64_value;
-    }
-    void Visit(const type::Int&) override {
-      value->m_int_value = x->m_int_value / y->m_int_value;
-    }
-    void Visit(const type::Uint&) override {
-      value->m_uint_value = x->m_uint_value / y->m_uint_value;
-    }
-    void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x->m_uintptr_value / y->m_uintptr_value;
-    }
-    void Visit(const type::Float32&) override {
-      value->m_float32_value = x->m_float32_value / y->m_float32_value;
-    }
-    void Visit(const type::Float64&) override {
-      value->m_float64_value = x->m_float64_value / y->m_float64_value;
-    }
-    void Visit(const type::Complex64&) override {
-      value->m_complex64_value = x->m_complex64_value / y->m_complex64_value;
-    }
-    void Visit(const type::Complex128&) override {
-      value->m_complex128_value = x->m_complex128_value / y->m_complex128_value;
-    }
-  };
-
+    ErrorList* error_list) {
   assert(x->IsInitialized());
   assert(y->IsInitialized());
 
@@ -1407,109 +585,40 @@ Value Value::Divide(
   }
 
   if (!(x->IsArithmetic() && y->IsArithmetic())) {
-    error_reporter->Insert(CannotApply2(location, "/", *x, *y));
+    error_list->push_back(cannotApply2(location, "/", *x, *y));
     return Value::MakeError();
   }
 
   if (y->IsZero()) {
-    error_reporter->Insert(DivisionByZero(location));
+    error_list->push_back(divisionByZero(location));
     return Value::MakeError();
   }
 
-    if (x->m_kind < y->m_kind) {
-    if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "/", *x, *y));
-      return Value::MakeError();
-    }
-  } else if (y->m_kind < x->m_kind) {
-    if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "/", *x, *y));
-      return Value::MakeError();
-    }
-  }
+  Promote(x, y);
+  if (x->IsError()) { return *x; }
+  if (y->IsError()) { return *y; }
 
   // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  Value v(x->m_kind);
-  switch (v.m_kind) {
+  switch (x->m_kind) {
     case Value::kUntypedConstant:
-      v.m_untyped_constant = UntypedConstant::Divide(x->m_untyped_constant, y->m_untyped_constant);
-      break;
+      return MakeUntypedConstant(UntypedConstant::Divide(x->m_untyped_constant, y->m_untyped_constant));
     case Value::kTypedConstant:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "/", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
-        Visitor vis(x, y, &v);
-        x->m_type->UnderlyingType()->Accept(&vis);
-      }
-      break;
+      return MakeTypedConstant(TypedConstant::Divide(x->m_typed_constant, y->m_typed_constant));
     case Value::kRValue:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "/", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
+      if (type::Identical(x->m_type, y->m_type)) {
+        return MakeRValue(type::Choose(x->m_type, y->m_type));
       }
-      break;
     default:
-      abort();  // NOT_COVERED
+      return MakeError();
   }
-  return v;
 }
 
 Value Value::Modulo(
     Location const & location, Value * x, Value * y,
-    ErrorReporter* error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
-        : x(a_x)
-        , y(a_y)
-        , value(a_value) {}
-    Value const * x;
-    Value const * y;
-    Value * value;
-
-    void Visit(const type::Int8&) override {
-      value->m_int8_value = x->m_int8_value % y->m_int8_value;
-    }
-    void Visit(const type::Int16&) override {
-      value->m_int16_value = x->m_int16_value % y->m_int16_value;
-    }
-    void Visit(const type::Int32&) override {
-      value->m_int32_value = x->m_int32_value % y->m_int32_value;
-    }
-    void Visit(const type::Int64&) override {
-      value->m_int64_value = x->m_int64_value % y->m_int64_value;
-    }
-    void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x->m_uint8_value % y->m_uint8_value;
-    }
-    void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x->m_uint16_value % y->m_uint16_value;
-    }
-    void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x->m_uint32_value % y->m_uint32_value;
-    }
-    void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x->m_uint64_value % y->m_uint64_value;
-    }
-    void Visit(const type::Int&) override {
-      value->m_int_value = x->m_int_value % y->m_int_value;
-    }
-    void Visit(const type::Uint&) override {
-      value->m_uint_value = x->m_uint_value % y->m_uint_value;
-    }
-    void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x->m_uintptr_value % y->m_uintptr_value;
-    }
-  };
-
+    ErrorList* error_list) {
   assert(x->IsInitialized());
   assert(y->IsInitialized());
 
@@ -1518,206 +627,124 @@ Value Value::Modulo(
   }
 
   if (!(x->IsInteger() && x->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "%", *x, *y));
+    error_list->push_back(cannotApply2(location, "%", *x, *y));
     return Value::MakeError();
   }
 
   if (y->IsZero()) {
-    error_reporter->Insert(DivisionByZero(location));
+    error_list->push_back(divisionByZero(location));
     return Value::MakeError();
   }
 
-  if (x->m_kind < y->m_kind) {
-    if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "%", *x, *y));
-      return Value::MakeError();
-    }
-  } else if (y->m_kind < x->m_kind) {
-    if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "%", *x, *y));
-      return Value::MakeError();
-    }
-  }
+  Promote(x, y);
+  if (x->IsError()) { return *x; }
+  if (y->IsError()) { return *y; }
 
   // TODO(jrw972):  Remove.
   x->Dereference();
   y->Dereference();
 
-  Value v(x->m_kind);
-  switch (v.m_kind) {
+  switch (x->m_kind) {
     case Value::kUntypedConstant:
-      v.m_untyped_constant = UntypedConstant::Modulo(x->m_untyped_constant, y->m_untyped_constant);
-      break;
+      return MakeUntypedConstant(UntypedConstant::Modulo(x->m_untyped_constant, y->m_untyped_constant));
     case Value::kTypedConstant:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "%", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
-        Visitor vis(x, y, &v);
-        x->m_type->UnderlyingType()->Accept(&vis);
-      }
+      return MakeTypedConstant(TypedConstant::Modulo(x->m_typed_constant, y->m_typed_constant));
       break;
     case Value::kRValue:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "%", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
+      if (type::Identical(x->m_type, y->m_type)) {
+        return MakeRValue(type::Choose(x->m_type, y->m_type));
       }
-      break;
     default:
-      abort();  // NOT_COVERED
+      return MakeError();
   }
-  return v;
 }
 
-Value Value::LeftShift(
-    Location const & location, Value * x, Value * y,
-    ErrorReporter* error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, unsigned int a_y, Value * a_value)
-        : x(a_x)
-        , y(a_y)
-        , value(a_value) {}
-    Value const * x;
-    unsigned int y;
-    Value * value;
-
-    void Visit(const type::Int8&) override {
-      value->m_int8_value = x->m_int8_value << y;
-    }
-    void Visit(const type::Int16&) override {
-      value->m_int16_value = x->m_int16_value << y;
-    }
-    void Visit(const type::Int32&) override {
-      value->m_int32_value = x->m_int32_value << y;
-    }
-    void Visit(const type::Int64&) override {
-      value->m_int64_value = x->m_int64_value << y;
-    }
-    void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x->m_uint8_value << y;
-    }
-    void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x->m_uint16_value << y;
-    }
-    void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x->m_uint32_value << y;
-    }
-    void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x->m_uint64_value << y;
-    }
-    void Visit(const type::Int&) override {
-      value->m_int_value = x->m_int_value << y;
-    }
-    void Visit(const type::Uint&) override {
-      value->m_uint_value = x->m_uint_value << y;
-    }
-    void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x->m_uintptr_value << y;
-    }
-  };
-
+Value Value::LeftShift(Value* x, Value* y, ErrorList* error_list) {
   assert(x->IsInitialized());
   assert(y->IsInitialized());
 
-  if (x->IsError() || y->IsError()) {
+  bool x_error = false;
+  if (!x->IsError()) {
+    if (!x->IsRValueish()) {
+      error_list->push_back(CannotBeUsedInAnExpression(x));
+      x_error = true;
+    } else if (!x->IsInteger()) {
+      error_list->push_back(IsNotAnInteger(x));
+      x_error = true;
+    }
+  } else {
+    x_error = true;
+  }
+
+  bool y_error = false;
+  if (!y->IsError()) {
+    if (!y->IsRValueish()) {
+      error_list->push_back(CannotBeUsedInAnExpression(y));
+      y_error = true;
+    } else {
+      if (y->IsConstant()) {
+        Value yy = ConvertConstant(*y, &type::Uint::instance);
+        if (!yy.IsError()) {
+          *y = yy;
+        } else {
+          y_error = true;
+        }
+      } else if (!y->IsInteger()) {
+        error_list->push_back(IsNotAnInteger(y));
+        y_error = true;
+      }
+    }
+  } else {
+    y_error = true;
+  }
+
+  if (x_error) {
     return Value::MakeError();
   }
 
-  {
-    Value xx = *x;
-    if (!xx.ToInteger()) {
-      error_reporter->Insert(CannotApply2(location, "<<", *x, *y));
-      return Value::MakeError();
+  if (x->m_kind == kRValue) {
+    return MakeRValue(x->type());
+  }
+
+  if (y_error) {
+    return Value::MakeError();
+  }
+
+  assert(x->IsConstant());
+
+  if (y->IsConstant()) {
+    unsigned int yyy = y->uint_value();
+    switch (x->m_kind) {
+      case Value::kUntypedConstant:
+        return MakeUntypedConstant(UntypedConstant::LeftShift(x->m_untyped_constant, yyy));
+      case Value::kTypedConstant:
+        return MakeTypedConstant(TypedConstant::LeftShift(x->m_typed_constant, yyy));
+      default:
+        abort();
+    }
+  } else {
+    // y is not constant.
+    switch (x->m_kind) {
+      case Value::kUntypedConstant:
+        {
+          // Convert to default integer type.
+          TypedConstant xx = TypedConstant::Make(&type::Int64::instance, x->m_untyped_constant);
+          if (xx.IsError()) {
+            return MakeError();
+          }
+          return MakeRValue(&type::Int64::instance);
+        }
+      case Value::kTypedConstant:
+        return MakeRValue(x->m_typed_constant.type());
+      default:
+        return MakeError();
     }
   }
-
-  if (!y->ToInteger() ||
-      !y->ConvertTo(&type::Uint::instance)) {
-    error_reporter->Insert(CannotApply2(location, "<<", *x, *y));
-    return Value::MakeError();
-  }
-
-  // TODO(jrw972):  Remove.
-  x->Dereference();
-  y->Dereference();
-
-  Value v(x->m_kind);
-  switch (x->m_kind) {
-    case Value::kUntypedConstant:
-      v = MakeUntypedConstant(UntypedConstant::LeftShift(x->m_untyped_constant, y->m_uint_value));
-      break;
-    case Value::kTypedConstant:
-      {
-        v.m_kind = Value::kTypedConstant;
-        v.m_type = x->m_type;
-        Visitor vis(x, y->m_uint_value, &v);
-        x->m_type->UnderlyingType()->Accept(&vis);
-      }
-      break;
-    case Value::kRValue:
-      {
-        v.m_kind = Value::kTypedConstant;
-        v.m_type = x->m_type;
-      }
-      break;
-    default:
-      abort();  // NOT_COVERED
-  }
-  return v;
 }
 
 Value Value::RightShift(
     Location const & location, Value * x, Value * y,
-    ErrorReporter* error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, unsigned int a_y, Value * a_value)
-        : x(a_x)
-        , y(a_y)
-        , value(a_value) {}
-    Value const * x;
-    unsigned int y;
-    Value * value;
-
-    void Visit(const type::Int8&) override {
-      value->m_int8_value = x->m_int8_value >> y;
-    }
-    void Visit(const type::Int16&) override {
-      value->m_int16_value = x->m_int16_value >> y;
-    }
-    void Visit(const type::Int32&) override {
-      value->m_int32_value = x->m_int32_value >> y;
-    }
-    void Visit(const type::Int64&) override {
-      value->m_int64_value = x->m_int64_value >> y;
-    }
-    void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x->m_uint8_value >> y;
-    }
-    void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x->m_uint16_value >> y;
-    }
-    void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x->m_uint32_value >> y;
-    }
-    void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x->m_uint64_value >> y;
-    }
-    void Visit(const type::Int&) override {
-      value->m_int_value = x->m_int_value >> y;
-    }
-    void Visit(const type::Uint&) override {
-      value->m_uint_value = x->m_uint_value >> y;
-    }
-    void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x->m_uintptr_value >> y;
-    }
-  };
-
+    ErrorList* error_list) {
   assert(x->IsInitialized());
   assert(y->IsInitialized());
 
@@ -1725,96 +752,74 @@ Value Value::RightShift(
     return Value::MakeError();
   }
 
-  {
-    Value xx = *x;
-    if (!xx.ToInteger()) {
-      error_reporter->Insert(CannotApply2(location, ">>", *x, *y));
+  if (y->IsConstant()) {
+    *y = ConvertConstant(*y, &type::Uint::instance);
+    if (y->IsError()) {
       return Value::MakeError();
     }
-  }
-
-  if (!y->ToInteger() ||
-      !y->ConvertTo(&type::Uint::instance)) {
-    error_reporter->Insert(CannotApply2(location, ">>", *x, *y));
-    return Value::MakeError();
-  }
-
-  // TODO(jrw972):  Remove.
-  x->Dereference();
-  y->Dereference();
-
-  Value v(x->m_kind);
-  switch (x->m_kind) {
-    case Value::kUntypedConstant:
-      v = MakeUntypedConstant(UntypedConstant::RightShift(x->m_untyped_constant, y->m_uint_value));
-      break;
-    case Value::kTypedConstant:
-      {
-        v.m_kind = Value::kTypedConstant;
-        v.m_type = x->m_type;
-        Visitor vis(x, y->m_uint_value, &v);
-        x->m_type->UnderlyingType()->Accept(&vis);
+    if (x->IsConstant()) {
+      unsigned int yyy = y->uint_value();
+      switch (x->m_kind) {
+        case Value::kUntypedConstant:
+          return MakeUntypedConstant(UntypedConstant::RightShift(x->m_untyped_constant, yyy));
+        case Value::kTypedConstant:
+          return MakeTypedConstant(TypedConstant::RightShift(x->m_typed_constant, yyy));
+          break;
+        default:
+          return MakeError();
       }
-      break;
-    case Value::kRValue:
-      {
-        v.m_kind = Value::kTypedConstant;
-        v.m_type = x->m_type;
+    } else {
+      // x is not constant.
+      switch (x->m_kind) {
+        case Value::kRValue:
+          if (type::IsInteger(x->m_type)) {
+            return MakeRValue(x->m_type);
+          }
+        default:
+          return MakeError();
       }
-      break;
-    default:
-      abort();  // NOT_COVERED
+    }
+  } else {
+    // y is not constant.
+    if (!type::IsInteger(y->m_type)) {
+      return MakeError();
+    }
+
+    if (x->IsConstant()) {
+      switch (x->m_kind) {
+        case Value::kUntypedConstant:
+          {
+            // Convert to default integer type.
+            TypedConstant xx = TypedConstant::Make(&type::Int64::instance, x->m_untyped_constant);
+            if (xx.IsError()) {
+              return MakeError();
+            }
+            return MakeRValue(&type::Int64::instance);
+          }
+        case Value::kTypedConstant:
+          if (type::IsInteger(x->m_typed_constant.type())) {
+            return MakeRValue(x->m_typed_constant.type());
+          }
+        default:
+          return MakeError();
+      }
+    } else {
+      // x is not constant.
+      switch (x->m_kind) {
+        case Value::kRValue:
+          if (type::IsInteger(x->m_type)) {
+            return MakeRValue(x->m_type);
+          }
+        default:
+          return MakeError();
+      }
+    }
   }
-  return v;
 }
 
 Value Value::BitAnd(
     Location const & location, Value * x, Value * y,
-    ErrorReporter* error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
-        : x(a_x)
-        , y(a_y)
-        , value(a_value) {}
-    Value const * x;
-    Value const * y;
-    Value * value;
-
-    void Visit(const type::Int8&) override {
-      value->m_int8_value = x->m_int8_value & y->m_int8_value;
-    }
-    void Visit(const type::Int16&) override {
-      value->m_int16_value = x->m_int16_value & y->m_int16_value;
-    }
-    void Visit(const type::Int32&) override {
-      value->m_int32_value = x->m_int32_value & y->m_int32_value;
-    }
-    void Visit(const type::Int64&) override {
-      value->m_int64_value = x->m_int64_value & y->m_int64_value;
-    }
-    void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x->m_uint8_value & y->m_uint8_value;
-    }
-    void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x->m_uint16_value & y->m_uint16_value;
-    }
-    void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x->m_uint32_value & y->m_uint32_value;
-    }
-    void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x->m_uint64_value & y->m_uint64_value;
-    }
-    void Visit(const type::Int&) override {
-      value->m_int_value = x->m_int_value & y->m_int_value;
-    }
-    void Visit(const type::Uint&) override {
-      value->m_uint_value = x->m_uint_value & y->m_uint_value;
-    }
-    void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x->m_uintptr_value & y->m_uintptr_value;
-    }
-  };
-
+    ErrorList* error_list) {
   assert(x->IsInitialized());
   assert(y->IsInitialized());
 
@@ -1823,456 +828,13 @@ Value Value::BitAnd(
   }
 
   if (!(x->IsInteger() && y->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "&", *x, *y));
+    error_list->push_back(cannotApply2(location, "&", *x, *y));
     return Value::MakeError();
   }
 
-  if (x->m_kind < y->m_kind) {
-    if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "&", *x, *y));
-      return Value::MakeError();
-    }
-  } else if (y->m_kind < x->m_kind) {
-    if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "&", *x, *y));
-      return Value::MakeError();
-    }
-  }
-
-  // TODO(jrw972):  Remove.
-  x->Dereference();
-  y->Dereference();
-
-  Value v(x->m_kind);
-  switch (v.m_kind) {
-    case Value::kUntypedConstant:
-      v.m_untyped_constant = UntypedConstant::BitAnd(x->m_untyped_constant, y->m_untyped_constant);
-      break;
-    case Value::kTypedConstant:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "&", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
-        Visitor vis(x, y, &v);
-        x->m_type->UnderlyingType()->Accept(&vis);
-      }
-      break;
-    case Value::kRValue:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "&", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
-      }
-      break;
-    default:
-      abort();  // NOT_COVERED
-  }
-  return v;
-}
-
-Value Value::BitAndNot(
-    Location const & location, Value * x, Value * y,
-    ErrorReporter* error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
-        : x(a_x)
-        , y(a_y)
-        , value(a_value) {}
-    Value const * x;
-    Value const * y;
-    Value * value;
-
-    void Visit(const type::Int8&) override {
-      value->m_int8_value = x->m_int8_value & ~y->m_int8_value;
-    }
-    void Visit(const type::Int16&) override {
-      value->m_int16_value = x->m_int16_value & ~y->m_int16_value;
-    }
-    void Visit(const type::Int32&) override {
-      value->m_int32_value = x->m_int32_value & ~y->m_int32_value;
-    }
-    void Visit(const type::Int64&) override {
-      value->m_int64_value = x->m_int64_value & ~y->m_int64_value;
-    }
-    void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x->m_uint8_value & ~y->m_uint8_value;
-    }
-    void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x->m_uint16_value & ~y->m_uint16_value;
-    }
-    void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x->m_uint32_value & ~y->m_uint32_value;
-    }
-    void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x->m_uint64_value & ~y->m_uint64_value;
-    }
-    void Visit(const type::Int&) override {
-      value->m_int_value = x->m_int_value & ~y->m_int_value;
-    }
-    void Visit(const type::Uint&) override {
-      value->m_uint_value = x->m_uint_value & ~y->m_uint_value;
-    }
-    void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x->m_uintptr_value & ~y->m_uintptr_value;
-    }
-  };
-
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
-  if (x->IsError() || y->IsError()) {
-    return Value::MakeError();
-  }
-
-  if (!(x->IsInteger() && y->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
-    return Value::MakeError();
-  }
-
-  if (x->m_kind < y->m_kind) {
-    if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
-      return Value::MakeError();
-    }
-  } else if (y->m_kind < x->m_kind) {
-    if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
-      return Value::MakeError();
-    }
-  }
-
-  // TODO(jrw972):  Remove.
-  x->Dereference();
-  y->Dereference();
-
-  Value v(x->m_kind);
-  switch (v.m_kind) {
-    case Value::kUntypedConstant:
-      v.m_untyped_constant = UntypedConstant::BitAndNot(x->m_untyped_constant, y->m_untyped_constant);
-      break;
-    case Value::kTypedConstant:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
-        Visitor vis(x, y, &v);
-        x->m_type->UnderlyingType()->Accept(&vis);
-      }
-      break;
-    case Value::kRValue:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "&~", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
-      }
-      break;
-    default:
-      abort();  // NOT_COVERED
-  }
-  return v;
-}
-
-Value Value::BitOr(
-    Location const & location, Value * x, Value * y,
-    ErrorReporter* error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
-        : x(a_x)
-        , y(a_y)
-        , value(a_value) {}
-    Value const * x;
-    Value const * y;
-    Value * value;
-
-    void Visit(const type::Int8&) override {
-      value->m_int8_value = x->m_int8_value | y->m_int8_value;
-    }
-    void Visit(const type::Int16&) override {
-      value->m_int16_value = x->m_int16_value | y->m_int16_value;
-    }
-    void Visit(const type::Int32&) override {
-      value->m_int32_value = x->m_int32_value | y->m_int32_value;
-    }
-    void Visit(const type::Int64&) override {
-      value->m_int64_value = x->m_int64_value | y->m_int64_value;
-    }
-    void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x->m_uint8_value | y->m_uint8_value;
-    }
-    void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x->m_uint16_value | y->m_uint16_value;
-    }
-    void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x->m_uint32_value | y->m_uint32_value;
-    }
-    void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x->m_uint64_value | y->m_uint64_value;
-    }
-    void Visit(const type::Int&) override {
-      value->m_int_value = x->m_int_value | y->m_int_value;
-    }
-    void Visit(const type::Uint&) override {
-      value->m_uint_value = x->m_uint_value | y->m_uint_value;
-    }
-    void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x->m_uintptr_value | y->m_uintptr_value;
-    }
-  };
-
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
-  if (x->IsError() || y->IsError()) {
-    return Value::MakeError();
-  }
-
-  if (!(x->IsInteger() && y->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "|", *x, *y));
-    return Value::MakeError();
-  }
-
-  if (x->m_kind < y->m_kind) {
-    if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "|", *x, *y));
-      return Value::MakeError();
-    }
-  } else if (y->m_kind < x->m_kind) {
-    if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "|", *x, *y));
-      return Value::MakeError();
-    }
-  }
-
-  // TODO(jrw972):  Remove.
-  x->Dereference();
-  y->Dereference();
-
-  Value v(x->m_kind);
-  switch (v.m_kind) {
-    case Value::kUntypedConstant:
-      v.m_untyped_constant = UntypedConstant::BitOr(x->m_untyped_constant, y->m_untyped_constant);
-      break;
-    case Value::kTypedConstant:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "|", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
-        Visitor vis(x, y, &v);
-        x->m_type->UnderlyingType()->Accept(&vis);
-      }
-      break;
-    case Value::kRValue:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "|", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
-      }
-      break;
-    default:
-      abort();  // NOT_COVERED
-  }
-  return v;
-}
-
-Value Value::BitXor(
-    Location const & location, Value * x, Value * y,
-    ErrorReporter* error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, Value const * a_y, Value * a_value)
-        : x(a_x)
-        , y(a_y)
-        , value(a_value) {}
-    Value const * x;
-    Value const * y;
-    Value * value;
-
-    void Visit(const type::Int8&) override {
-      value->m_int8_value = x->m_int8_value ^ y->m_int8_value;
-    }
-    void Visit(const type::Int16&) override {
-      value->m_int16_value = x->m_int16_value ^ y->m_int16_value;
-    }
-    void Visit(const type::Int32&) override {
-      value->m_int32_value = x->m_int32_value ^ y->m_int32_value;
-    }
-    void Visit(const type::Int64&) override {
-      value->m_int64_value = x->m_int64_value ^ y->m_int64_value;
-    }
-    void Visit(const type::Uint8&) override {
-      value->m_uint8_value = x->m_uint8_value ^ y->m_uint8_value;
-    }
-    void Visit(const type::Uint16&) override {
-      value->m_uint16_value = x->m_uint16_value ^ y->m_uint16_value;
-    }
-    void Visit(const type::Uint32&) override {
-      value->m_uint32_value = x->m_uint32_value ^ y->m_uint32_value;
-    }
-    void Visit(const type::Uint64&) override {
-      value->m_uint64_value = x->m_uint64_value ^ y->m_uint64_value;
-    }
-    void Visit(const type::Int&) override {
-      value->m_int_value = x->m_int_value ^ y->m_int_value;
-    }
-    void Visit(const type::Uint&) override {
-      value->m_uint_value = x->m_uint_value ^ y->m_uint_value;
-    }
-    void Visit(const type::Uintptr&) override {
-      value->m_uintptr_value = x->m_uintptr_value ^ y->m_uintptr_value;
-    }
-  };
-
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
-  if (x->IsError() || y->IsError()) {
-    return Value::MakeError();
-  }
-
-  if (!(x->IsInteger() && y->IsInteger())) {
-    error_reporter->Insert(CannotApply2(location, "^", *x, *y));
-    return Value::MakeError();
-  }
-
-  if (x->m_kind < y->m_kind) {
-    if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "^", *x, *y));
-      return Value::MakeError();
-    }
-  } else if (y->m_kind < x->m_kind) {
-    if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "^", *x, *y));
-      return Value::MakeError();
-    }
-  }
-
-  // TODO(jrw972):  Remove.
-  x->Dereference();
-  y->Dereference();
-
-  Value v(x->m_kind);
-  switch (v.m_kind) {
-    case Value::kUntypedConstant:
-      v.m_untyped_constant = UntypedConstant::BitXor(x->m_untyped_constant, y->m_untyped_constant);
-      break;
-    case Value::kTypedConstant:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "^", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
-        Visitor vis(x, y, &v);
-        x->m_type->UnderlyingType()->Accept(&vis);
-      }
-      break;
-    case Value::kRValue:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "^", *x, *y));
-          return Value::MakeError();
-        }
-        v.m_type = x->m_type;
-      }
-      break;
-    default:
-      abort();  // NOT_COVERED
-  }
-  return v;
-}
-
-Value Value::Equal(
-    Location const & location, Value * x, Value * y,
-    ErrorReporter* error_reporter) {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(Value const * a_x, Value const * a_y)
-        : x(a_x) , y(a_y) {}
-    Value const * x;
-    Value const * y;
-    Value flag;
-
-    void Visit(const type::Bool&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_bool_value == y->m_bool_value));
-    }
-    void Visit(const type::Complex64&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_complex64_value == y->m_complex64_value));
-    }
-    void Visit(const type::Complex128&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_complex128_value == y->m_complex128_value));
-    }
-    void Visit(const type::Float32&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_float32_value == y->m_float32_value));
-    }
-    void Visit(const type::Float64&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_float64_value == y->m_float64_value));
-    }
-    void Visit(const type::Int&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_int_value == y->m_int_value));
-    }
-    void Visit(const type::Int8&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_int8_value == y->m_int8_value));
-    }
-    void Visit(const type::Int16&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_int16_value == y->m_int16_value));
-    }
-    void Visit(const type::Int32&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_int32_value == y->m_int32_value));
-    }
-    void Visit(const type::Int64&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_int64_value == y->m_int64_value));
-    }
-    void Visit(const type::Uint&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_uint_value == y->m_uint_value));
-    }
-    void Visit(const type::Uint8&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_uint8_value == y->m_uint8_value));
-    }
-    void Visit(const type::Uint16&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_uint16_value == y->m_uint16_value));
-    }
-    void Visit(const type::Uint32&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_uint32_value == y->m_uint32_value));
-    }
-    void Visit(const type::Uint64&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_uint64_value == y->m_uint64_value));
-    }
-    void Visit(const type::Uintptr&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_uintptr_value == y->m_uintptr_value));
-    }
-    void Visit(const type::String&) override {
-      flag = MakeUntypedConstant(UntypedConstant::MakeBoolean(x->m_string_value == y->m_string_value));
-    }
-  };
-
-  assert(x->IsInitialized());
-  assert(y->IsInitialized());
-
-  if (x->IsError() || y->IsError()) {
-    return Value::MakeError();
-  }
-
-  if (x->m_kind < y->m_kind) {
-    if (!x->PromoteTo(*y)) {
-      error_reporter->Insert(CannotApply2(location, "==", *x, *y));
-      return Value::MakeError();
-    }
-  } else if (y->m_kind < x->m_kind) {
-    if (!y->PromoteTo(*x)) {
-      error_reporter->Insert(CannotApply2(location, "==", *x, *y));
-      return Value::MakeError();
-    }
-  }
+  Promote(x, y);
+  if (x->IsError()) { return *x; }
+  if (y->IsError()) { return *y; }
 
   // TODO(jrw972):  Remove.
   x->Dereference();
@@ -2280,46 +842,170 @@ Value Value::Equal(
 
   switch (x->m_kind) {
     case Value::kUntypedConstant:
-      {
-        UntypedConstant uc = UntypedConstant::Equal(x->m_untyped_constant, y->m_untyped_constant);
-        if (uc.IsError()) {
-          error_reporter->Insert(CannotApply2(location, "==", *x, *y));
-        }
-        return MakeUntypedConstant(uc);
-      }
+      return MakeUntypedConstant(UntypedConstant::BitAnd(x->m_untyped_constant, y->m_untyped_constant));
     case Value::kTypedConstant:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "==", *x, *y));
-          return Value::MakeError();
-        }
-        Visitor vis(x, y);
-        x->m_type->UnderlyingType()->Accept(&vis);
-        return vis.flag;
-      }
-      break;
+      return MakeTypedConstant(TypedConstant::BitAnd(x->m_typed_constant, y->m_typed_constant));
     case Value::kRValue:
-      {
-        if (x->m_type != y->m_type) {
-          error_reporter->Insert(CannotApply2(location, "==", *x, *y));
-          return Value::MakeError();
-        }
-        return MakeRValue(&type::Bool::instance);
+      if (type::Identical(x->m_type, y->m_type)) {
+        return MakeRValue(type::Choose(x->m_type, y->m_type));
       }
-      break;
     default:
-      abort();  // NOT_COVERED
-      break;
+      return MakeError();
+  }
+}
+
+Value Value::BitAndNot(
+    Location const & location, Value * x, Value * y,
+    ErrorList* error_list) {
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
+  if (x->IsError() || y->IsError()) {
+    return Value::MakeError();
   }
 
-  abort();
-  return Value::MakeError();  // NOT_COVERED
+  if (!(x->IsInteger() && y->IsInteger())) {
+    error_list->push_back(cannotApply2(location, "&~", *x, *y));
+    return Value::MakeError();
+  }
+
+  Promote(x, y);
+  if (x->IsError()) { return *x; }
+  if (y->IsError()) { return *y; }
+
+  // TODO(jrw972):  Remove.
+  x->Dereference();
+  y->Dereference();
+
+  switch (x->m_kind) {
+    case Value::kUntypedConstant:
+      return MakeUntypedConstant(UntypedConstant::BitAndNot(x->m_untyped_constant, y->m_untyped_constant));
+    case Value::kTypedConstant:
+      return MakeTypedConstant(TypedConstant::BitAndNot(x->m_typed_constant, y->m_typed_constant));
+    case Value::kRValue:
+      if (type::Identical(x->m_type, y->m_type)) {
+        return MakeRValue(type::Choose(x->m_type, y->m_type));
+      }
+    default:
+      return MakeError();
+  }
+}
+
+Value Value::BitOr(
+    Location const & location, Value * x, Value * y,
+    ErrorList* error_list) {
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
+  if (x->IsError() || y->IsError()) {
+    return Value::MakeError();
+  }
+
+  if (!(x->IsInteger() && y->IsInteger())) {
+    error_list->push_back(cannotApply2(location, "|", *x, *y));
+    return Value::MakeError();
+  }
+
+  Promote(x, y);
+  if (x->IsError()) { return *x; }
+  if (y->IsError()) { return *y; }
+
+  // TODO(jrw972):  Remove.
+  x->Dereference();
+  y->Dereference();
+
+  switch (x->m_kind) {
+    case Value::kUntypedConstant:
+      return MakeUntypedConstant(UntypedConstant::BitOr(x->m_untyped_constant, y->m_untyped_constant));
+    case Value::kTypedConstant:
+      return MakeTypedConstant(TypedConstant::BitOr(x->m_typed_constant, y->m_typed_constant));
+    case Value::kRValue:
+      if (type::Identical(x->m_type, y->m_type)) {
+        return MakeRValue(type::Choose(x->m_type, y->m_type));
+      }
+    default:
+      return MakeError();
+  }
+}
+
+Value Value::BitXor(
+    Location const & location, Value * x, Value * y,
+    ErrorList* error_list) {
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
+  if (x->IsError() || y->IsError()) {
+    return Value::MakeError();
+  }
+
+  if (!(x->IsInteger() && y->IsInteger())) {
+    error_list->push_back(cannotApply2(location, "^", *x, *y));
+    return Value::MakeError();
+  }
+
+  Promote(x, y);
+  if (x->IsError()) { return *x; }
+  if (y->IsError()) { return *y; }
+
+  // TODO(jrw972):  Remove.
+  x->Dereference();
+  y->Dereference();
+
+  switch (x->m_kind) {
+    case Value::kUntypedConstant:
+      return MakeUntypedConstant(UntypedConstant::BitXor(x->m_untyped_constant, y->m_untyped_constant));
+    case Value::kTypedConstant:
+      return MakeTypedConstant(TypedConstant::BitXor(x->m_typed_constant, y->m_typed_constant));
+    case Value::kRValue:
+      if (type::Identical(x->m_type, y->m_type)) {
+        return MakeRValue(type::Choose(x->m_type, y->m_type));
+      }
+    default:
+      return MakeError();
+  }
+}
+
+Value Value::Equal(
+    Location const & location, Value * x, Value * y,
+    ErrorList* error_list) {
+  assert(x->IsInitialized());
+  assert(y->IsInitialized());
+
+  if (x->IsError() || y->IsError()) {
+    return Value::MakeError();
+  }
+
+  if (!(x->IsComparable() && y->IsComparable())) {
+    error_list->push_back(cannotApply2(location, "==", *x, *y));
+    return Value::MakeError();
+  }
+
+  Promote(x, y);
+  if (x->IsError()) { return *x; }
+  if (y->IsError()) { return *y; }
+
+  // TODO(jrw972):  Remove.
+  x->Dereference();
+  y->Dereference();
+
+  switch (x->m_kind) {
+    case Value::kUntypedConstant:
+      return MakeUntypedConstant(UntypedConstant::Equal(x->m_untyped_constant, y->m_untyped_constant));
+    case Value::kTypedConstant:
+      return MakeUntypedConstant(TypedConstant::Equal(x->m_typed_constant, y->m_typed_constant));
+    case Value::kRValue:
+      if (type::Identical(x->m_type, y->m_type)) {
+        return MakeRValue(type::Choose(x->m_type, y->m_type));
+      }
+    default:
+      return MakeError();
+  }
 }
 
 Value Value::Call(
     Location const & location, Value * operand,
     std::vector<Value *> const & arguments,
-    const LocationList& locations, ErrorReporter* error_reporter) {
+    const LocationList& locations, ErrorList* error_list) {
   assert(operand->IsInitialized());
   assert(arguments.size() == locations.size());
 
@@ -2328,7 +1014,7 @@ Value Value::Call(
   }
 
   if (!operand->IsCallable()) {
-    error_reporter->Insert(OperandCannotBeCalled(location));
+    error_list->push_back(operandCannotBeCalled(location));
     return Value::MakeError();
   }
 
@@ -2336,8 +1022,8 @@ Value Value::Call(
       type::Cast<const type::Function>(operand->m_type);
 
   if (arguments.size() != function->ParameterCount()) {
-    error_reporter->Insert(
-        CallExpectsNArguments(
+    error_list->push_back(
+        callExpectsNArguments(
             location, function->ParameterCount(), arguments.size()));
   }
 
@@ -2348,13 +1034,17 @@ Value Value::Call(
     if (argument->IsError()) {
       continue;
     }
-    symbol::Parameter const * parameter = function->ParameterAt(idx);
-    if (!argument->ConvertTo(parameter->type)) {
-      error_reporter->Insert(CannotConvert(locations.at(idx), *argument,
-                                           parameter->type));
-    }
+
     // TODO(jrw972):  Remove.
     argument->Dereference();
+
+    symbol::Parameter const * parameter = function->ParameterAt(idx);
+    Value variable = MakeLValue(parameter->type);
+    IsAssignableFrom(&variable, argument);
+    if (variable.IsError() || argument->IsError()) {
+      error_list->push_back(cannotConvert(locations.at(idx), *argument,
+                                           parameter->type));
+    }
   }
 
   if (function->ResultCount() == 0) {
@@ -2373,69 +1063,6 @@ Value Value::Call(
 }
 
 bool Value::operator==(const Value& y) const {
-  struct Visitor : public type::DefaultVisitor {
-    Visitor(const Value& a_x, const Value& a_y)
-        : x(a_x)
-        , y(a_y)
-        , flag(false) {}
-
-    const Value& x;
-    const Value& y;
-    bool flag;
-
-    void Visit(const type::Bool&) override {
-      flag = x.m_bool_value == y.m_bool_value;
-    }
-    void Visit(const type::Int8&) override {
-      flag = x.m_int8_value == y.m_int8_value;
-    }
-    void Visit(const type::Int16&) override {
-      flag = x.m_int16_value == y.m_int16_value;
-    }
-    void Visit(const type::Int32&) override {
-      flag = x.m_int32_value == y.m_int32_value;
-    }
-    void Visit(const type::Int64&) override {
-      flag = x.m_int64_value == y.m_int64_value;
-    }
-    void Visit(const type::Uint8&) override {
-      flag = x.m_uint8_value == y.m_uint8_value;
-    }
-    void Visit(const type::Uint16&) override {
-      flag = x.m_uint16_value == y.m_uint16_value;
-    }
-    void Visit(const type::Uint32&) override {
-      flag = x.m_uint32_value == y.m_uint32_value;
-    }
-    void Visit(const type::Uint64&) override {
-      flag = x.m_uint64_value == y.m_uint64_value;
-    }
-    void Visit(const type::Int&) override {
-      flag = x.m_int_value == y.m_int_value;
-    }
-    void Visit(const type::Uint&) override {
-      flag = x.m_uint_value == y.m_uint_value;
-    }
-    void Visit(const type::Uintptr&) override {
-      flag = x.m_uintptr_value == y.m_uintptr_value;
-    }
-    void Visit(const type::Float32&) override {
-      flag = x.m_float32_value == y.m_float32_value;
-    }
-    void Visit(const type::Float64&) override {
-      flag = x.m_float64_value == y.m_float64_value;
-    }
-    void Visit(const type::Complex64&) override {
-      flag = x.m_complex64_value == y.m_complex64_value;
-    }
-    void Visit(const type::Complex128&) override {
-      flag = x.m_complex128_value == y.m_complex128_value;
-    }
-    void Visit(const type::String&) override {
-      flag = x.m_string_value == y.m_string_value;
-    }
-  };
-
   if (this->m_kind != y.m_kind) {
     return false;
   }
@@ -2448,14 +1075,7 @@ bool Value::operator==(const Value& y) const {
     case Value::kUntypedConstant:
       return this->m_untyped_constant == y.m_untyped_constant;
     case Value::kTypedConstant:
-      {
-        if (this->m_type != y.m_type) {
-          return false;
-        }
-        Visitor visitor(*this, y);
-        this->m_type->UnderlyingType()->Accept(&visitor);
-        return visitor.flag;
-      }
+      return this->m_typed_constant == y.m_typed_constant;
     case Value::kFunction:
     case Value::kRValue:
     case Value::kLValue:
@@ -2577,6 +1197,12 @@ std::ostream& operator<<(std::ostream& out, const Value& value) {
       break;
   }
   return out;
+}
+
+Error CannotBeUsedInAnExpression(Value const* x) {
+  Error error;  // TODO(jrw972): Use location of x.
+  error.message << "error: cannot be used in expression" << std::endl;
+  return error;
 }
 
 }  // namespace value

@@ -59,5 +59,14 @@ symbol::Symbol* Table::Find(const std::string& identifier) const {
   return nullptr;
 }
 
+Error DuplicateSymbol(
+    const symbol::Symbol* a_symbol, const symbol::Symbol* a_previous_symbol) {
+  Error error(a_symbol->location);
+  error.message << "error: " << a_symbol->identifier
+                << " was previously declared at " << a_previous_symbol->location
+                << std::endl;
+  return error;
+}
+
 }  // namespace symbol
 }  // namespace rcgo

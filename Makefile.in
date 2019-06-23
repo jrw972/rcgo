@@ -147,7 +147,8 @@ am_librcgo_la_OBJECTS = src/librcgo_la-argument_parser.lo \
 	src/librcgo_la-process_qualified_identifier.lo \
 	src/librcgo_la-process_type.lo src/librcgo_la-scanner.lo \
 	src/librcgo_la-symbol.lo src/librcgo_la-token.lo \
-	src/librcgo_la-type.lo src/librcgo_la-untyped_constant.lo \
+	src/librcgo_la-type.lo src/librcgo_la-typed_constant.lo \
+	src/librcgo_la-untyped_constant.lo \
 	src/librcgo_la-upper_table.lo src/librcgo_la-utf8.lo \
 	src/librcgo_la-value.lo
 librcgo_la_OBJECTS = $(am_librcgo_la_OBJECTS)
@@ -668,6 +669,7 @@ src/scanner.h src/scanner.cc \
 src/symbol.h src/symbol.cc \
 src/token.h src/token.cc \
 src/type.h src/type.cc \
+src/typed_constant.h src/typed_constant.cc \
 src/untyped_constant.h src/untyped_constant.cc \
 src/upper_table.cc \
 src/utf8.h src/utf8.cc \
@@ -839,6 +841,8 @@ src/librcgo_la-token.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-type.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/librcgo_la-typed_constant.lo: src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-untyped_constant.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/librcgo_la-upper_table.lo: src/$(am__dirstamp) \
@@ -992,6 +996,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-symbol.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-token.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-type.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-typed_constant.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-untyped_constant.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-upper_table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librcgo_la-utf8.Plo@am__quote@
@@ -1229,6 +1234,13 @@ src/librcgo_la-type.lo: src/type.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/type.cc' object='src/librcgo_la-type.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-type.lo `test -f 'src/type.cc' || echo '$(srcdir)/'`src/type.cc
+
+src/librcgo_la-typed_constant.lo: src/typed_constant.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-typed_constant.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-typed_constant.Tpo -c -o src/librcgo_la-typed_constant.lo `test -f 'src/typed_constant.cc' || echo '$(srcdir)/'`src/typed_constant.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/librcgo_la-typed_constant.Tpo src/$(DEPDIR)/librcgo_la-typed_constant.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/typed_constant.cc' object='src/librcgo_la-typed_constant.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -c -o src/librcgo_la-typed_constant.lo `test -f 'src/typed_constant.cc' || echo '$(srcdir)/'`src/typed_constant.cc
 
 src/librcgo_la-untyped_constant.lo: src/untyped_constant.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librcgo_la_CXXFLAGS) $(CXXFLAGS) -MT src/librcgo_la-untyped_constant.lo -MD -MP -MF src/$(DEPDIR)/librcgo_la-untyped_constant.Tpo -c -o src/librcgo_la-untyped_constant.lo `test -f 'src/untyped_constant.cc' || echo '$(srcdir)/'`src/untyped_constant.cc

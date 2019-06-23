@@ -60,7 +60,7 @@ TEST_CASE("Token::Make(kind)") {
 }
 
 TEST_CASE("Token::Make(location, token)") {
-  Location loc = Location::Make("blah", 3);
+  Location loc = Location("blah", 3);
   Token s = Token::Make(Token::kFunc);
   Token t = Token::Make(loc, s);
   REQUIRE(t.location() == loc);

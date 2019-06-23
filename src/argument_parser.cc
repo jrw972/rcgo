@@ -18,74 +18,53 @@
 
 namespace rcgo {
 
-struct ExtraArgument : public Error {
-  explicit ExtraArgument(const std::string& a_argument)
-      : argument(a_argument) {}
-  void Print(std::ostream& out) const override {
-    out << "error: extra argument: " << argument << std::endl;
-  }
+namespace {
 
-  std::string const argument;
-};
+Error extraArgument(std::string const& token) {
+  Error error;
+  error.message << "error: extra argument: " << token << std::endl;
+  return error;
+}
 
-struct NoCommand : public Error {
-  void Print(std::ostream& out) const override {
-    out << "error: no command" << std::endl;
-  }
-};
+Error noCommand() {
+  Error error;
+  error.message << "error: no command" << std::endl;
+  return error;
+}
 
-struct UnknownCommand : public Error {
-  explicit UnknownCommand(const std::string& a_command)
-      : command(a_command) {}
-  void Print(std::ostream& out) const override {
-    out << "error: unknown command: " << command << std::endl;
-  }
+Error unknownCommand(std::string const& command) {
+  Error error;
+  error.message << "error: unknown command: " << command << std::endl;
+  return error;
+}
 
-  std::string const command;
-};
+Error unimplementedCommand(std::string const& command) {
+  Error error;
+  error.message << "error: unimplemented command: " << command << std::endl;
+  return error;
+}
 
-struct UnimplementedCommand : public Error {
-  explicit UnimplementedCommand(const std::string& a_command)
-      : command(a_command) {}
-  void Print(std::ostream& out) const override {
-    out << "error: unimplemented command: " << command << std::endl;
-  }
+Error optionRequiresArgument(std::string const& option) {
+  Error error;
+  error.message << "error: " << option << " requires an argument" << std::endl;
+  return error;
+}
 
-  std::string const command;
-};
+Error unknownOption(std::string const& option) {
+  Error error;
+  error.message << "error: unknown option: " << option << std::endl;
+  return error;
+}
 
-struct UnknownFlag : public Error {
-  explicit UnknownFlag(const std::string& a_flag)
-      : flag(a_flag) {}
-  void Print(std::ostream& out) const override {
-    out << "error: unknown flag: " << flag << std::endl;
-  }
+Error cannotConvert(std::string const& token, std::string const& message) {
+  Error error;
+  error.message << "error: cannot convert " << token << " to " << message << std::endl;
+  return error;
+}
 
-  std::string const flag;
-};
+}  // namespace
 
-struct FlagRequiresParameter : public Error {
-  explicit FlagRequiresParameter(const std::string& a_flag)
-      : flag(a_flag) {}
-  void Print(std::ostream& out) const override {
-    out << "error: " << flag << " requires an argument" << std::endl;
-  }
-
-  std::string const flag;
-};
-
-struct ExpectedAnUnsignedInteger : public Error {
-  explicit ExpectedAnUnsignedInteger(const std::string& a_argument)
-      : argument(a_argument) {}
-  void Print(std::ostream& out) const override {
-    out << "error: cannot convert " << argument << " to an unsigned integer"
-        << std::endl;
-  }
-
-  std::string const argument;
-};
-
-void Build::Execute() {
+void Build::Execute(ErrorList* a_error_list) {
   if (paths.empty()) {
     // Build current directory.
     paths.push_back(".");
@@ -94,79 +73,80 @@ void Build::Execute() {
   Paths path_list;
 
   for (const auto& path : paths) {
-    Compile(path, &path_list, m_error_reporter, std::cout);
+    Compile(path, &path_list, a_error_list, std::cout);
   }
 }
 
-CommandI* ArgumentParser::CommandLine() {
+CommandI* ArgumentParser::CommandLine(ErrorList* a_error_list) {
   // Consume the name of the program.
   m_argument_scanner.Consume();
-  CommandI* command = Command();
+  CommandI* command = Command(a_error_list);
   const char* token = NULL;
   while ((token = m_argument_scanner.Peek())) {
-    m_error_reporter->Insert(ExtraArgument(token));
+    a_error_list->push_back(extraArgument(token));
   }
   return command;
 }
 
-CommandI* ArgumentParser::Command() {
+CommandI* ArgumentParser::Command(ErrorList* a_error_list) {
   const char* token = m_argument_scanner.Consume();
   if (token == NULL) {
-    m_error_reporter->Insert(NoCommand());
+    a_error_list->push_back(noCommand());
   } else if (strcmp(token, "bug") == 0) {
-    return Bug();
+    return Bug(a_error_list);
   } else if (strcmp(token, "build") == 0) {
-    return Build();
+    return Build(a_error_list);
   } else if (strcmp(token, "clean") == 0) {
-    return Clean();
+    return Clean(a_error_list);
   } else if (strcmp(token, "doc") == 0) {
-    return Doc();
+    return Doc(a_error_list);
   } else if (strcmp(token, "env") == 0) {
-    return Env();
+    return Env(a_error_list);
   } else if (strcmp(token, "fix") == 0) {
-    return Fix();
+    return Fix(a_error_list);
   } else if (strcmp(token, "fmt") == 0) {
-    return Fmt();
+    return Fmt(a_error_list);
   } else if (strcmp(token, "generate") == 0) {
-    return Generate();
+    return Generate(a_error_list);
   } else if (strcmp(token, "get") == 0) {
-    return Get();
+    return Get(a_error_list);
   } else if (strcmp(token, "help") == 0) {
-    return Help();
+    return Help(a_error_list);
   } else if (strcmp(token, "install") == 0) {
-    return Install();
+    return Install(a_error_list);
   } else if (strcmp(token, "list") == 0) {
-    return List();
+    return List(a_error_list);
   } else if (strcmp(token, "mod") == 0) {
-    return Mod();
+    return Mod(a_error_list);
   } else if (strcmp(token, "run") == 0) {
-    return Run();
+    return Run(a_error_list);
   } else if (strcmp(token, "test") == 0) {
-    return Test();
+    return Test(a_error_list);
   } else if (strcmp(token, "tool") == 0) {
-    return Tool();
+    return Tool(a_error_list);
   } else if (strcmp(token, "version") == 0) {
-    return Version();
+    return Version(a_error_list);
   } else if (strcmp(token, "vet") == 0) {
-    return Vet();
+    return Vet(a_error_list);
   } else {
-    m_error_reporter->Insert(UnknownCommand(token));
+    a_error_list->push_back(unknownCommand(token));
   }
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::Bug() {
-  m_error_reporter->Insert(UnimplementedCommand("bug"));
+CommandI* ArgumentParser::Bug(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("bug"));
+
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::Build() {
-  OptionalBuildArguments();
+CommandI* ArgumentParser::Build(ErrorList* a_error_list) {
+  OptionalBuildArguments(a_error_list);
   OptionalPaths();
   return &m_build;
 }
 
-void ArgumentParser::BuildFlag() {
+void ArgumentParser::BuildFlag(ErrorList* a_error_list) {
   const char* token = m_argument_scanner.Consume();
   if (strcmp(token, "-a") == 0) {
     m_build_flags.force_rebuild = true;
@@ -175,75 +155,75 @@ void ArgumentParser::BuildFlag() {
   } else if (strcmp(token, "-p") == 0) {
     const char* p = m_argument_scanner.Peek();
     if (p != NULL) {
-      m_build_flags.parallelism = UnsignedInteger(0);
+      m_build_flags.parallelism = UnsignedInteger(0, a_error_list);
     } else {
-      m_error_reporter->Insert(FlagRequiresParameter("-p"));
+      a_error_list->push_back(optionRequiresArgument("-p"));
     }
   } else if (strcmp(token, "-v") == 0) {
     m_build_flags.print_packages = true;
   } else if (strcmp(token, "-work") == 0) {
     m_build_flags.print_and_keep_working_directory = true;
   } else {
-    m_error_reporter->Insert(UnknownFlag(token));
+    a_error_list->push_back(unknownOption(token));
   }
 }
 
-CommandI* ArgumentParser::Clean() {
-  m_error_reporter->Insert(UnimplementedCommand("clean"));
+CommandI* ArgumentParser::Clean(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("clean"));
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::Doc() {
-  m_error_reporter->Insert(UnimplementedCommand("doc"));
+CommandI* ArgumentParser::Doc(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("doc"));
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::Env() {
-  m_error_reporter->Insert(UnimplementedCommand("env"));
+CommandI* ArgumentParser::Env(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("env"));
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::Fix() {
-  m_error_reporter->Insert(UnimplementedCommand("fix"));
+CommandI* ArgumentParser::Fix(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("fix"));
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::Fmt() {
-  m_error_reporter->Insert(UnimplementedCommand("fmt"));
+CommandI* ArgumentParser::Fmt(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("fmt"));
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::Generate() {
-  m_error_reporter->Insert(UnimplementedCommand("generate"));
+CommandI* ArgumentParser::Generate(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("generate"));
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::Get() {
-  m_error_reporter->Insert(UnimplementedCommand("get"));
+CommandI* ArgumentParser::Get(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("get"));
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::Help() {
-  m_error_reporter->Insert(UnimplementedCommand("help"));
+CommandI* ArgumentParser::Help(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("help"));
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::Install() {
-  m_error_reporter->Insert(UnimplementedCommand("install"));
+CommandI* ArgumentParser::Install(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("install"));
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::List() {
-  m_error_reporter->Insert(UnimplementedCommand("list"));
+CommandI* ArgumentParser::List(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("list"));
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::Mod() {
-  m_error_reporter->Insert(UnimplementedCommand("mod"));
+CommandI* ArgumentParser::Mod(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("mod"));
   return &m_no_op;
 }
 
-void ArgumentParser::OptionalBuildArguments() {
+void ArgumentParser::OptionalBuildArguments(ErrorList* a_error_list) {
   const char* token;
   while ((token = m_argument_scanner.Peek())) {
     if (token[0] != '-') return;
@@ -253,13 +233,13 @@ void ArgumentParser::OptionalBuildArguments() {
       if (output != NULL) {
         m_build.output_file = output;
       } else {
-        m_error_reporter->Insert(FlagRequiresParameter("-o"));
+        a_error_list->push_back(optionRequiresArgument("-o"));
       }
     } else if (strcmp(token, "-i") == 0) {
       m_argument_scanner.Consume();
       m_build.install_dependencies = true;
     } else {
-      BuildFlag();
+      BuildFlag(a_error_list);
     }
   }
 }
@@ -271,22 +251,23 @@ void ArgumentParser::OptionalPaths() {
   }
 }
 
-CommandI* ArgumentParser::Run() {
-  m_error_reporter->Insert(UnimplementedCommand("run"));
+CommandI* ArgumentParser::Run(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("run"));
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::Test() {
-  m_error_reporter->Insert(UnimplementedCommand("test"));
+CommandI* ArgumentParser::Test(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("test"));
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::Tool() {
-  m_error_reporter->Insert(UnimplementedCommand("tool"));
+CommandI* ArgumentParser::Tool(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("tool"));
   return &m_no_op;
 }
 
-unsigned int ArgumentParser::UnsignedInteger(unsigned int default_value) {
+unsigned int ArgumentParser::UnsignedInteger(unsigned int default_value,
+                                             ErrorList* a_error_list) {
   const char* token = m_argument_scanner.Peek();
   assert(token != NULL);
   char* end = NULL;
@@ -294,18 +275,18 @@ unsigned int ArgumentParser::UnsignedInteger(unsigned int default_value) {
   if (end != NULL && *end == 0) {
     return value;
   } else {
-    m_error_reporter->Insert(ExpectedAnUnsignedInteger(token));
+    a_error_list->push_back(cannotConvert(token, "an unsigned integer"));
     return default_value;
   }
 }
 
-CommandI* ArgumentParser::Version() {
-  m_error_reporter->Insert(UnimplementedCommand("version"));
+CommandI* ArgumentParser::Version(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("version"));
   return &m_no_op;
 }
 
-CommandI* ArgumentParser::Vet() {
-  m_error_reporter->Insert(UnimplementedCommand("vet"));
+CommandI* ArgumentParser::Vet(ErrorList* a_error_list) {
+  a_error_list->push_back(unimplementedCommand("vet"));
   return &m_no_op;
 }
 

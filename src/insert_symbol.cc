@@ -10,12 +10,12 @@
 namespace rcgo {
 
 void InsertSymbol(MutableBlock* block, symbol::Symbol* symbol,
-                  ErrorReporter* error_reporter) {
+                  ErrorList* error_list) {
   symbol::Symbol* s = block->FindLocalSymbol(symbol->identifier);
   if (s == NULL) {
     block->Insert(symbol);
   } else {
-    error_reporter->Insert(DuplicateSymbol(symbol, s));
+    error_list->push_back(DuplicateSymbol(symbol, s));
   }
 }
 

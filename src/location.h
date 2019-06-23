@@ -17,11 +17,16 @@ struct Location {
   const char* path;
   unsigned int line;
 
-  static Location Make(const char* a_path, unsigned int a_line);
-  static Location builtin;
+  Location();
+  Location(const char* a_path, unsigned int a_line);
+  static Location builtin;  // TODO(jrw972): Remove this.
 
   bool operator== (const Location& other) const {
     return this->path == other.path && this->line == other.line;
+  }
+
+  bool operator!= (const Location& other) const {
+    return !(*this == other);
   }
 };
 

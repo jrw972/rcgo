@@ -17,21 +17,21 @@ using std::rel_ops::operator!=;
 namespace test {
 
 TEST_CASE("Location::make") {
-  Location location = Location::Make("my file", 10);
+  Location location = Location("my file", 10);
   REQUIRE(std::string(location.path) == std::string("my file"));
   REQUIRE(location.line == 10);
 }
 
 TEST_CASE("Location::operator==") {
-  Location location1 = Location::Make("my file", 10);
-  Location location2 = Location::Make("my file", 10);
-  Location location3 = Location::Make("my file", 11);
+  Location location1 = Location("my file", 10);
+  Location location2 = Location("my file", 10);
+  Location location3 = Location("my file", 11);
   REQUIRE(location1 == location2);
   REQUIRE(location1 != location3);
 }
 
 TEST_CASE("Location::operator<<") {
-  Location location = Location::Make("my file", 10);
+  Location location = Location("my file", 10);
   std::stringstream ss;
   ss << location;
   REQUIRE(ss.str() == "my file:10");

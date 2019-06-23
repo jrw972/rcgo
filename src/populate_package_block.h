@@ -18,7 +18,7 @@ namespace rcgo {
 // package_block.
 void PopulatePackageBlock(const ast::SourceFiles& source_files,
                           MutableBlock* package_block,
-                          ErrorReporter* error_reporter);
+                          ErrorList* error_list);
 
 }  // namespace rcgo
 

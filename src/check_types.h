@@ -16,7 +16,7 @@ namespace rcgo {
 
 void CheckTypes(
     ast::Node* source_file, Block* file_block, type::Factory* type_factory,
-    ErrorReporter* error_reporter);
+    ErrorList* error_list);
 
 }  // namespace rcgo
 

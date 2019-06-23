@@ -264,6 +264,9 @@ struct Table {
   ListType m_list;
 };
 
+Error DuplicateSymbol(
+    const symbol::Symbol* a_symbol, const symbol::Symbol* a_previous_symbol);
+
 }  // namespace symbol
 }  // namespace rcgo
 

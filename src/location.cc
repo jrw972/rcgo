@@ -13,22 +13,23 @@
 
 namespace rcgo {
 
-Location Location::Make(const char* path, unsigned int line) {
+Location::Location()
+    : path(nullptr), line(0) {}
+
+Location::Location(const char* path, unsigned int line) {
   // Cache all paths.
   static std::set<std::string> strings;
 
-  Location loc;
-  loc.path = path;
-  loc.line = line;
+  this->path = path;
+  this->line = line;
 
-  if (path != NULL) {
+  if (path != nullptr) {
     std::string s(path);
     std::pair<std::set<std::string>::iterator, bool> pos = strings.insert(s);
-    loc.path = pos.first->c_str();
+    this->path = pos.first->c_str();
   }
-  return loc;
 }
 
-Location Location::builtin = Make("(builtin)", 1);
+Location Location::builtin("(builtin)", 1);
 
 }  // namespace rcgo

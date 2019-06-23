@@ -19,11 +19,11 @@
 namespace rcgo {
 
 struct CommandI {
-  virtual void Execute() = 0;
+  virtual void Execute(ErrorList* a_error_list) = 0;
 };
 
 struct NoOp : public CommandI {
-  void Execute() override {}
+  void Execute(ErrorList* a_error_list) override {}
 };
 
 struct BuildFlags {
@@ -44,54 +44,49 @@ struct Build : public CommandI {
   const BuildFlags& build_flags;
   Paths paths;
 
-  explicit Build(const BuildFlags& a_build_flags,
-                 ErrorReporter* a_error_reporter)
-      : install_dependencies(false), build_flags(a_build_flags),
-        m_error_reporter(a_error_reporter) {}
+  explicit Build(const BuildFlags& a_build_flags)
+      : install_dependencies(false), build_flags(a_build_flags) {}
 
-  void Execute() override;
-
- private:
-  ErrorReporter* m_error_reporter;
+  void Execute(ErrorList* a_error_list) override;
 };
 
 struct ArgumentParser {
-  ArgumentParser(int argc, char** argv, ErrorReporter* a_error_reporter)
-      : m_argument_scanner(argc, argv), m_error_reporter(a_error_reporter),
-        m_build(m_build_flags, a_error_reporter) {}
+  ArgumentParser(int argc, char** argv)
+      : m_argument_scanner(argc, argv),
+        m_build(m_build_flags) {}
 
-  CommandI* CommandLine();
+  CommandI* CommandLine(ErrorList* a_error_list);
 
  private:
   ArgumentScanner m_argument_scanner;
-  ErrorReporter* m_error_reporter;
   NoOp m_no_op;
   BuildFlags m_build_flags;
   rcgo::Build m_build;
 
-  CommandI* Bug();
-  CommandI* Build();
-  void BuildFlag();
-  CommandI* Clean();
-  CommandI* Command();
-  CommandI* Doc();
-  CommandI* Env();
-  CommandI* Fix();
-  CommandI* Fmt();
-  CommandI* Generate();
-  CommandI* Get();
-  CommandI* Help();
-  CommandI* Install();
-  CommandI* List();
-  CommandI* Mod();
-  void OptionalBuildArguments();
+  CommandI* Bug(ErrorList* a_error_list);
+  CommandI* Build(ErrorList* a_error_list);
+  void BuildFlag(ErrorList* a_error_list);
+  CommandI* Clean(ErrorList* a_error_list);
+  CommandI* Command(ErrorList* a_error_list);
+  CommandI* Doc(ErrorList* a_error_list);
+  CommandI* Env(ErrorList* a_error_list);
+  CommandI* Fix(ErrorList* a_error_list);
+  CommandI* Fmt(ErrorList* a_error_list);
+  CommandI* Generate(ErrorList* a_error_list);
+  CommandI* Get(ErrorList* a_error_list);
+  CommandI* Help(ErrorList* a_error_list);
+  CommandI* Install(ErrorList* a_error_list);
+  CommandI* List(ErrorList* a_error_list);
+  CommandI* Mod(ErrorList* a_error_list);
+  void OptionalBuildArguments(ErrorList* a_error_list);
   void OptionalPaths();
-  CommandI* Run();
-  CommandI* Test();
-  CommandI* Tool();
-  unsigned int UnsignedInteger(unsigned int default_value);
-  CommandI* Version();
-  CommandI* Vet();
+  CommandI* Run(ErrorList* a_error_list);
+  CommandI* Test(ErrorList* a_error_list);
+  CommandI* Tool(ErrorList* a_error_list);
+  unsigned int UnsignedInteger(unsigned int default_value,
+                               ErrorList* a_error_list);
+  CommandI* Version(ErrorList* a_error_list);
+  CommandI* Vet(ErrorList* a_error_list);
 };
 
 }  // namespace rcgo

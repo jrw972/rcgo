@@ -27,16 +27,16 @@ struct UScanner {
 
 struct ReportingUScanner : public UScanner {
   ReportingUScanner(ByteStreamI* a_byte_stream, Utf8Scanner* a_scanner,
-                    ErrorReporter* a_error_reporter)
+                    ErrorList* a_error_list)
       : UScanner(a_byte_stream), scanner(a_scanner),
-        error_reporter(a_error_reporter) {}
+        error_list(a_error_list) {}
 
   void ReportIllegalUtf8Sequence() override {
-    error_reporter->Insert(IllegalUtf8Sequence(scanner->GetLocation()));
+    error_list->push_back(IllegalUtf8Sequence(scanner->GetLocation()));
   }
 
   Utf8Scanner* scanner;
-  ErrorReporter* error_reporter;
+  ErrorList* error_list;
 };
 
 struct State {
@@ -159,7 +159,7 @@ State ConsumeTrash(UScanner* scanner) {
 
 Runet Utf8Scanner::Peek(size_t offset) {
   while (offset >= m_buffer.size()) {
-    ReportingUScanner scanner(m_byte_stream, this, m_error_reporter);
+    ReportingUScanner scanner(m_byte_stream, this, m_error_list);
     for (State state = State(Leading); !state.done(); state = state(&scanner))
       ;;
     m_buffer.push_back(scanner.rune);
@@ -185,7 +185,7 @@ void Utf8Scanner::Consume(size_t count) {
 }
 
 Location Utf8Scanner::GetLocation() const {
-  return Location::Make(m_byte_stream->Path(), m_line);
+  return Location(m_byte_stream->Path(), m_line);
 }
 
 // https://golang.org/ref/spec#Characters
@@ -281,11 +281,17 @@ void Append(std::string* s, Runet r) {
 }
 
 Runet FirstRune(const std::string& s) {
-  StringByteStream sbs(s);
+  StringByteStream sbs("", s);
   UScanner scanner(&sbs);
   for (State state = State(Leading); !state.done(); state = state(&scanner))
     ;;
   return scanner.rune;
+}
+
+Error IllegalUtf8Sequence(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: illegal UTF-8 sequence" << std::endl;
+  return error;
 }
 
 }  // namespace rcgo

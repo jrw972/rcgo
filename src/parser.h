@@ -14,10 +14,10 @@
 namespace rcgo {
 
 struct Parser {
-  Parser(ByteStreamI* a_byte_stream, ErrorReporter* a_error_reporter,
+  Parser(ByteStreamI* a_byte_stream, ErrorList* a_error_list,
          std::ostream& a_out)
-      : m_scanner(a_byte_stream, a_error_reporter),
-        m_error_reporter(a_error_reporter), m_out(a_out), m_trace(false),
+      : m_scanner(a_byte_stream, a_error_list),
+        m_error_list(a_error_list), m_out(a_out), m_trace(false),
         m_expression_level(0) {}
   ~Parser() {}
 
@@ -74,7 +74,7 @@ struct Parser {
 
  private:
   Scanner m_scanner;
-  ErrorReporter* m_error_reporter;
+  ErrorList* m_error_list;
   std::ostream& m_out;
   bool m_trace;
   int m_expression_level;
@@ -87,6 +87,20 @@ struct Parser {
 
   bool OptionalSemicolon(Token::Kind follow);
 };
+
+Error ExpectedAType(const Location& a_location);
+Error ExpectedAFieldDeclaration(const Location& a_location);
+Error Expected1(const Location& a_location, const Token::Kind a_expected);
+Error Expected2(const Location& a_location, const Token::Kind a_expecteda,
+                const Token::Kind a_expectedb);
+Error IllegalVariadicParameter(const Location& a_location);
+Error ExpectedAMethodSpecification(const Location& a_location);
+Error ExpectedAnOperand(const Location& a_location);
+Error ExpectedADeclaration(const Location& a_location);
+Error ExpectedASpecificationOrGroup(const Location& a_location);
+Error ExpectedNExpressions(const Location& a_location, size_t a_n);
+Error InvalidSlice(const Location& a_location);
+Error UnexpectedExpressionList(const Location& a_location);
 
 }  // namespace rcgo
 

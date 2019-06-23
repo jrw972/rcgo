@@ -15,7 +15,7 @@ namespace rcgo {
 
 // Inserts the symbol into the symbol table of block (if not already declared).
 void InsertSymbol(MutableBlock* block, symbol::Symbol* symbol,
-                  ErrorReporter* error_reporter);
+                  ErrorList* error_list);
 
 }  // namespace rcgo
 

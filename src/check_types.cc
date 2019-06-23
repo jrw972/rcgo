@@ -8,6 +8,7 @@
 #include "src/check_types.h"
 
 #include <iostream>
+#include <string>
 
 #include "src/ast.h"
 #include "src/define_symbol.h"
@@ -17,16 +18,16 @@
 namespace rcgo {
 
 void CheckTypes(ast::Node* node, Block* block, type::Factory* type_factory,
-                ErrorReporter* error_reporter) {
+                ErrorList* error_list) {
   struct Visitor : public ast::DefaultNodeVisitor {
     Block* const block;
     type::Factory* type_factory;
-    ErrorReporter* error_reporter;
+    ErrorList* error_list;
 
     Visitor(Block* a_block, type::Factory* a_type_factory,
-            ErrorReporter* a_error_reporter)
+            ErrorList* a_error_list)
         : block(a_block), type_factory(a_type_factory),
-          error_reporter(a_error_reporter) {}
+          error_list(a_error_list) {}
 
     void DefaultAction(ast::Node* ast) override {
       std::cout << *ast << std::endl; abort(); /* NOT_COVERED */
@@ -47,14 +48,14 @@ void CheckTypes(ast::Node* node, Block* block, type::Factory* type_factory,
       symbol::Function* function = ast->function;
       assert(function != nullptr);
       Block blk(function->type(), block);
-      CheckTypes(ast->optional_body, &blk, type_factory, error_reporter);
+      CheckTypes(ast->optional_body, &blk, type_factory, error_list);
     }
 
     void Visit(ast::Block* ast) override {
       symbol::Table symbol_table(block->package());
       MutableBlock blk(&symbol_table, block);
       for (auto statement : ast->statements) {
-        CheckTypes(statement, &blk, type_factory, error_reporter);
+        CheckTypes(statement, &blk, type_factory, error_list);
       }
     }
 
@@ -73,18 +74,18 @@ void CheckTypes(ast::Node* node, Block* block, type::Factory* type_factory,
       }
       value::Value::Call(
           ast->operand->location, ast->operand->converted_value(),
-          arguments, locations, error_reporter);
+          arguments, locations, error_list);
     }
 
     void Visit(ast::Identifier* ast) override {
       symbol::Symbol* symbol = block->FindGlobalSymbol(ast->identifier);
       if (symbol == nullptr) {
-        error_reporter->Insert(NotDeclared(ast->location, ast->identifier));
+        error_list->push_back(NotDeclared(ast->location, ast->identifier));
         ast->computed_value(value::Value::MakeError());
         return;
       }
 
-      if (DefineSymbol(symbol, block, type_factory, error_reporter)) {
+      if (DefineSymbol(symbol, block, type_factory, error_list)) {
         ast->computed_value(symbol->GetValue());
       } else {
         ast->computed_value(value::Value::MakeError());
@@ -102,7 +103,7 @@ void CheckTypes(ast::Node* node, Block* block, type::Factory* type_factory,
     // }
   };
 
-  Visitor visitor(block, type_factory, error_reporter);
+  Visitor visitor(block, type_factory, error_list);
   node->Accept(&visitor);
 }
 

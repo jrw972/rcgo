@@ -8,21 +8,38 @@
 #include "src/process_qualified_identifier.h"
 
 #include <cassert>
+#include <string>
 
 #include "src/ast.h"
 #include "src/package.h"
 
 namespace rcgo {
+namespace {
+
+Error doesNotReferToAPackage(const Location& a_location,
+                             const std::string& a_identifier) {
+  Error error(a_location);
+  error.message << "error: " << a_identifier << " does not refer to a package" << std::endl;
+  return error;
+}
+
+Error isNotExported(const Location& a_location, const std::string& a_identifier) {
+  Error error(a_location);
+  error.message << "error: " << a_identifier << " is not exported" << std::endl;
+  return error;
+}
+
+}
 
 symbol::Symbol* ProcessQualifiedIdentifier(ast::Node* ast, const Block& block,
-                                   ErrorReporter* error_reporter) {
+                                   ErrorList* error_list) {
   struct Visitor : public ast::DefaultNodeVisitor {
     const Block& block;
-    ErrorReporter* error_reporter;
+    ErrorList* error_list;
     symbol::Symbol* symbol;
 
-    Visitor(const Block& a_block, ErrorReporter* a_error_reporter)
-        : block(a_block), error_reporter(a_error_reporter), symbol(NULL) {}
+    Visitor(const Block& a_block, ErrorList* a_error_list)
+        : block(a_block), error_list(a_error_list), symbol(NULL) {}
 
     void DefaultAction(ast::Node* ast) override { abort(); /* NOT_COVERED */ }
 
@@ -35,27 +52,27 @@ symbol::Symbol* ProcessQualifiedIdentifier(ast::Node* ast, const Block& block,
       // Look up the package.
       symbol = block.FindGlobalSymbol(p->identifier);
       if (symbol == NULL) {
-        error_reporter->Insert(NotDeclared(p->location, p->identifier));
+        error_list->push_back(NotDeclared(p->location, p->identifier));
         symbol = NULL;
         return;
       }
       symbol::Package* package = symbol::Cast<symbol::Package>(symbol);
       if (package == NULL) {
-        error_reporter->Insert(
-            DoesNotReferToAPackage(p->location, p->identifier));
+        error_list->push_back(
+            doesNotReferToAPackage(p->location, p->identifier));
         symbol = NULL;
         return;
       }
 
       if (!symbol::IsExported(m->identifier)) {
-        error_reporter->Insert(IsNotExported(m->location, m->identifier));
+        error_list->push_back(isNotExported(m->location, m->identifier));
         symbol = NULL;
         return;
       }
 
       symbol = package->the_package->Find(m->identifier);
       if (symbol == NULL) {
-        error_reporter->Insert(NotDeclared(m->location, m->identifier));
+        error_list->push_back(NotDeclared(m->location, m->identifier));
         symbol = NULL;
         return;
       }
@@ -64,12 +81,12 @@ symbol::Symbol* ProcessQualifiedIdentifier(ast::Node* ast, const Block& block,
     void Visit(ast::Identifier* ast) override {
       symbol = block.FindGlobalSymbol(ast->identifier);
       if (symbol == NULL) {
-        error_reporter->Insert(NotDeclared(ast->location, ast->identifier));
+        error_list->push_back(NotDeclared(ast->location, ast->identifier));
       }
     }
   };
 
-  Visitor visitor(block, error_reporter);
+  Visitor visitor(block, error_list);
   ast->Accept(&visitor);
   return visitor.symbol;
 }

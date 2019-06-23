@@ -18,7 +18,7 @@ namespace rcgo {
 // table of file_block including types, constants, variables,
 // functions, and methods.
 void DefineSymbols(ast::Node* source_file, Block* file_block,
-                   type::Factory* type_factory, ErrorReporter* error_reporter);
+                   type::Factory* type_factory, ErrorList* error_list);
 
 }  // namespace rcgo
 

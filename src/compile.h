@@ -15,8 +15,11 @@ namespace rcgo {
 
 // Compiles the package that is last in import_locations.
 Package* Compile(
-    const Path& path, Paths* path_list, ErrorReporter* error_reporter,
+    const Path& path, Paths* path_list, ErrorList* error_list,
     std::ostream& out);
+
+Error RecursiveImport(const Paths& path_list, const Path& path);
+Error NoFiles(std::string const& package_source_directory_path);
 
 }  // namespace rcgo
 

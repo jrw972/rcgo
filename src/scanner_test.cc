@@ -12,21 +12,24 @@
 
 namespace rcgo {
 namespace test {
+namespace {
+char const* path = "test path";
+}
 
 #define EMPTY_TEST(str) TEST_CASE("Scanner::Peek() on \"" str "\"") {   \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 1, &abort_handler);                            \
-    StringByteStream seq(str);                                          \
-    Scanner scanner(&seq, &er);                                         \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, str);                                    \
+    Scanner scanner(&seq, &el);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kEnd);                                   \
   }
 
 #define IDENTIFIER_TEST(id) TEST_CASE("Scanner::Peek() on \"" id "\"") { \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 1, &abort_handler);                            \
-    StringByteStream seq(id);                                           \
-    Scanner scanner(&seq, &er);                                         \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, id);                                     \
+    Scanner scanner(&seq, &el);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kIdentifier);                            \
     REQUIRE(t.identifier() == id);                                      \
@@ -35,9 +38,9 @@ namespace test {
 #define KEYWORD_TEST(keyword, token)                                    \
   TEST_CASE("Scanner::Peek() on \"" keyword "\"") {                     \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 1, &abort_handler);                            \
-    StringByteStream seq(keyword);                                      \
-    Scanner scanner(&seq, &er);                                         \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, keyword);                                \
+    Scanner scanner(&seq, &el);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == token);                                         \
   }
@@ -45,9 +48,9 @@ namespace test {
 #define OPERATOR_DELIMITER_TEST(od, token)                              \
   TEST_CASE("Scanner::Peek() on \"" od "\"") {                          \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 1, &abort_handler);                            \
-    StringByteStream seq(od);                                           \
-    Scanner scanner(&seq, &er);                                         \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, od);                                     \
+    Scanner scanner(&seq, &el);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == token);                                         \
   }
@@ -55,9 +58,9 @@ namespace test {
 #define OPERATOR_DELIMITER_TEST2(od, token, getter, x)                  \
   TEST_CASE("Scanner::Peek() on \"" od "\"") {                          \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 1, &abort_handler);                            \
-    StringByteStream seq(od);                                           \
-    Scanner scanner(&seq, &er);                                         \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, od);                                     \
+    Scanner scanner(&seq, &el);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == token);                                         \
     REQUIRE(t.getter() == x);                                           \
@@ -66,59 +69,59 @@ namespace test {
 #define INTEGER_LITERAL_TEST(literal, val)                              \
   TEST_CASE("Scanner::Peek() on \"" literal "\"") {                     \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 1, &abort_handler);                            \
-    StringByteStream seq(literal);                                      \
-    Scanner scanner(&seq, &er);                                         \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, literal);                                \
+    Scanner scanner(&seq, &el);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind() == value::UntypedConstant::kInteger); \
-    REQUIRE(t.value().integer_value() == val);                         \
+    REQUIRE(t.value().kind() == value::UntypedConstant::kInteger);      \
+    REQUIRE(t.value().integer_value() == val);                          \
   }
 
 #define FLOATING_LITERAL_TEST(literal, val)                             \
   TEST_CASE("Scanner::Peek() on \"" literal "\"") {                     \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 1, &abort_handler);                            \
-    StringByteStream seq(literal);                                      \
-    Scanner scanner(&seq, &er);                                         \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, literal);                                \
+    Scanner scanner(&seq, &el);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind() == value::UntypedConstant::kFloat); \
-    REQUIRE(fabs(t.value().float_value().get_d() - val) < .0000001);   \
+    REQUIRE(t.value().kind() == value::UntypedConstant::kFloat);        \
+    REQUIRE(fabs(t.value().float_value().get_d() - val) < .0000001);    \
   }
 
 #define IMAGINARY_LITERAL_TEST(literal, val)                            \
   TEST_CASE("Scanner::Peek() on \"" literal "\"") {                     \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 1, &abort_handler);                            \
-    StringByteStream seq(literal);                                      \
-    Scanner scanner(&seq, &er);                                         \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, literal);                                \
+    Scanner scanner(&seq, &el);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind() == value::UntypedConstant::kComplex); \
+    REQUIRE(t.value().kind() == value::UntypedConstant::kComplex);      \
     REQUIRE(fabs(t.value().complex_value().imag().get_d() - val) < .0000001); \
   }
 
 #define RUNE_LITERAL_TEST(literal, val)                                 \
   TEST_CASE("Scanner::Peek() on \"" literal "\"") {                     \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 1, &abort_handler);                            \
-    StringByteStream seq(literal);                                      \
-    Scanner scanner(&seq, &er);                                         \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, literal);                                \
+    Scanner scanner(&seq, &el);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
-    REQUIRE(t.value().kind() == value::UntypedConstant::kRune); \
+    REQUIRE(t.value().kind() == value::UntypedConstant::kRune);         \
     REQUIRE(t.value().rune_value() == val);                             \
   }
 
 #define RUNE_LITERAL_TEST_ERROR(literal, err)                           \
   TEST_CASE("Scanner::Peek() on \"" literal "\"") {                     \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 0, &abort_handler);                            \
-    StringByteStream seq(literal);                                      \
-    Scanner scanner(&seq, &er);                                         \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, literal);                                \
+    Scanner scanner(&seq, &el);                                         \
     Token t = scanner.Peek();                                           \
-    REQUIRE(er.At(0) == std::string(err));                              \
+    REQUIRE(el.at(0) == err);                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
     REQUIRE(t.value().kind() == value::UntypedConstant::kRune); \
   }
@@ -126,9 +129,9 @@ namespace test {
 #define STRING_LITERAL_TEST(literal, val)                               \
   TEST_CASE("Scanner::Peek() on \"" literal "\"") {                     \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 1, &abort_handler);                            \
-    StringByteStream seq(literal);                                      \
-    Scanner scanner(&seq, &er);                                         \
+    ErrorList el;                            \
+    StringByteStream seq(path, literal);                                      \
+    Scanner scanner(&seq, &el);                                         \
     Token t = scanner.Peek();                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
     REQUIRE(t.value().kind() == value::UntypedConstant::kString); \
@@ -138,11 +141,11 @@ namespace test {
 #define STRING_LITERAL_TEST_ERROR(literal, err)                         \
   TEST_CASE("Scanner::Peek() on \"" literal "\"") {                     \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 0, &abort_handler);                            \
-    StringByteStream seq(literal);                                      \
-    Scanner scanner(&seq, &er);                                         \
+    ErrorList el;                            \
+    StringByteStream seq(path, literal);                                      \
+    Scanner scanner(&seq, &el);                                         \
     Token t = scanner.Peek();                                           \
-    REQUIRE(er.At(0) == std::string(err));                              \
+    REQUIRE(el.at(0) == err);                                           \
     REQUIRE(t.kind() == Token::kLiteral);                               \
     REQUIRE(t.value().kind() == value::UntypedConstant::kString);       \
   }
@@ -150,11 +153,11 @@ namespace test {
 #define CONSUME_ERROR(str, k, err)                                      \
   TEST_CASE("Scanner::Consume() on \"" str "\"") {                      \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 0, &abort_handler);                            \
-    StringByteStream seq(str);                                          \
-    Scanner scanner(&seq, &er);                                         \
+    ErrorList el;                            \
+    StringByteStream seq(path, str);                                          \
+    Scanner scanner(&seq, &el);                                         \
     Token t0 = scanner.Consume();                                       \
-    REQUIRE(er.At(0) == std::string(err));                              \
+    REQUIRE(el.at(0) == err);                                           \
     REQUIRE(t0.kind() == k);                                            \
   }
 
@@ -306,22 +309,22 @@ RUNE_LITERAL_TEST("'\\xff'", 0xFF);
 RUNE_LITERAL_TEST("'\\u12e4'", 0x12E4);
 RUNE_LITERAL_TEST("'\\U00101234'", 0x00101234);
 RUNE_LITERAL_TEST("'\\''", '\'');
-RUNE_LITERAL_TEST_ERROR("'aa'", ExtraCharactersInRuneLiteral(location));
+RUNE_LITERAL_TEST_ERROR("'aa'", ExtraCharactersInRuneLiteral(Location(path, 1)));
 RUNE_LITERAL_TEST_ERROR("'\\xa'",
-                        TooFewHexadecimalDigitsInRuneLiteral(location));
+                        TooFewHexadecimalDigitsInRuneLiteral(Location(path, 1)));
 RUNE_LITERAL_TEST_ERROR("'\\ua'",
-                        TooFewHexadecimalDigitsInRuneLiteral(location));
+                        TooFewHexadecimalDigitsInRuneLiteral(Location(path, 1)));
 RUNE_LITERAL_TEST_ERROR("'\\Ua'",
-                        TooFewHexadecimalDigitsInRuneLiteral(location));
-RUNE_LITERAL_TEST_ERROR("'\\0'", TooFewOctalDigitsInRuneLiteral(location));
-RUNE_LITERAL_TEST_ERROR("'\\777'", OctalValueOutOfRange(location));
-RUNE_LITERAL_TEST_ERROR("'\\uDFFF'", InvalidUnicodeCodePoint(location));
-RUNE_LITERAL_TEST_ERROR("'\\U00110000'", InvalidUnicodeCodePoint(location));
-RUNE_LITERAL_TEST_ERROR("'", IncompleteRuneLiteral(location));
-RUNE_LITERAL_TEST_ERROR("''", EmptyRuneLiteral(location));
-RUNE_LITERAL_TEST_ERROR("'a\n", IncompleteRuneLiteral(location));
-RUNE_LITERAL_TEST_ERROR("'\\c'", IllegalEscapeSequence(location));
-RUNE_LITERAL_TEST_ERROR("'\\\"'", IllegalEscapeSequence(location));
+                        TooFewHexadecimalDigitsInRuneLiteral(Location(path, 1)));
+RUNE_LITERAL_TEST_ERROR("'\\0'", TooFewOctalDigitsInRuneLiteral(Location(path, 1)));
+RUNE_LITERAL_TEST_ERROR("'\\777'", OctalValueOutOfRange(Location(path, 1)));
+RUNE_LITERAL_TEST_ERROR("'\\uDFFF'", InvalidUnicodeCodePoint(Location(path, 1)));
+RUNE_LITERAL_TEST_ERROR("'\\U00110000'", InvalidUnicodeCodePoint(Location(path, 1)));
+RUNE_LITERAL_TEST_ERROR("'", IncompleteRuneLiteral(Location(path, 1)));
+RUNE_LITERAL_TEST_ERROR("''", EmptyRuneLiteral(Location(path, 1)));
+RUNE_LITERAL_TEST_ERROR("'a\n", IncompleteRuneLiteral(Location(path, 1)));
+RUNE_LITERAL_TEST_ERROR("'\\c'", IllegalEscapeSequence(Location(path, 1)));
+RUNE_LITERAL_TEST_ERROR("'\\\"'", IllegalEscapeSequence(Location(path, 1)));
 
 STRING_LITERAL_TEST("`abc`", "abc");
 STRING_LITERAL_TEST("`\\n\n\\n`", "\\n\n\\n");
@@ -337,18 +340,18 @@ STRING_LITERAL_TEST("\"\\xe6\\x97\\xa5\\xe6\\x9c\\xac\\xe8\\xaa\\x9e\"",
 STRING_LITERAL_TEST("\"\u65e5本\U00008a9ea\"", "日本語a");
 STRING_LITERAL_TEST("\"\\xff\\u00FF\"", "\xff\xc3\xbf");
 STRING_LITERAL_TEST("`\r`", "");
-STRING_LITERAL_TEST_ERROR("\"\\uD800\"", InvalidUnicodeCodePoint(location));
-STRING_LITERAL_TEST_ERROR("\"\\U00110000\"", InvalidUnicodeCodePoint(location));
-STRING_LITERAL_TEST_ERROR("\"\\'\"", IllegalEscapeSequence(location));
-STRING_LITERAL_TEST_ERROR("`", IncompleteStringLiteral(location));
-STRING_LITERAL_TEST_ERROR("\"", IncompleteStringLiteral(location));
-STRING_LITERAL_TEST_ERROR("\"\n\"", IncompleteStringLiteral(location));
+STRING_LITERAL_TEST_ERROR("\"\\uD800\"", InvalidUnicodeCodePoint(Location(path, 1)));
+STRING_LITERAL_TEST_ERROR("\"\\U00110000\"", InvalidUnicodeCodePoint(Location(path, 1)));
+STRING_LITERAL_TEST_ERROR("\"\\'\"", IllegalEscapeSequence(Location(path, 1)));
+STRING_LITERAL_TEST_ERROR("`", IncompleteStringLiteral(Location(path, 1)));
+STRING_LITERAL_TEST_ERROR("\"", IncompleteStringLiteral(Location(path, 1)));
+STRING_LITERAL_TEST_ERROR("\"\n\"", IncompleteStringLiteral(Location(path, 1)));
 
 TEST_CASE("Scanner::Consume() on \"y = m * x + b // equation of a line\"") {
   std::stringstream ss;
-  ErrorReporter er(ss, 1, &abort_handler);
-  StringByteStream seq("y = m * x + b // equation of a line");
-  Scanner scanner(&seq, &er);
+  ErrorList el;
+  StringByteStream seq(path, "y = m * x + b // equation of a line");
+  Scanner scanner(&seq, &el);
   Token t0 = scanner.Consume();
   Token t1 = scanner.Consume();
   Token t2 = scanner.Consume();
@@ -375,9 +378,9 @@ TEST_CASE("Scanner::Consume() on \"y = m * x + b // equation of a line\"") {
 
 TEST_CASE("Scanner::Consume() on \"y += x /* add something */\\n\\n\"") {
   std::stringstream ss;
-  ErrorReporter er(ss, 1, &abort_handler);
-  StringByteStream seq("y += x /* add something */\n\n");
-  Scanner scanner(&seq, &er);
+  ErrorList el;
+  StringByteStream seq(path, "y += x /* add something */\n\n");
+  Scanner scanner(&seq, &el);
   Token t0 = scanner.Consume();
   Token t1 = scanner.Consume();
   Token t2 = scanner.Consume();
@@ -392,19 +395,19 @@ TEST_CASE("Scanner::Consume() on \"y += x /* add something */\\n\\n\"") {
   REQUIRE(t4.kind() == Token::kEnd);
 }
 
-CONSUME_ERROR("@", Token::kEnd, StrayRune(location, "@"));
-CONSUME_ERROR("/*", Token::kEnd, UnterminatedGeneralComment(location));
-CONSUME_ERROR(".12345E+", Token::kLiteral, ExpectedDecimalDigit(location));
-CONSUME_ERROR("123xyz", Token::kLiteral, ExtraCharactersInToken(location));
+CONSUME_ERROR("@", Token::kEnd, StrayRune(Location(path, 1), "@"));
+CONSUME_ERROR("/*", Token::kEnd, UnterminatedGeneralComment(Location(path, 1)));
+CONSUME_ERROR(".12345E+", Token::kLiteral, ExpectedDecimalDigit(Location(path, 1)));
+CONSUME_ERROR("123xyz", Token::kLiteral, ExtraCharactersInToken(Location(path, 1)));
 // CONSUME_ERROR("'\\777'", Token::Rune);
 
 TEST_CASE("Scanner::Consume() on \"1E99999999999999999999999999999999\"") {
   std::stringstream ss;
-  ErrorReporter er(ss, 0, &abort_handler);
-  StringByteStream seq("1E99999999999999999999999999999999");
-  Scanner scanner(&seq, &er);
+  ErrorList el;
+  StringByteStream seq(path, "1E99999999999999999999999999999999");
+  Scanner scanner(&seq, &el);
   Token t0 = scanner.Consume();
-  REQUIRE(er.At(0) == std::string(FloatingPointOverflow(location)));
+  REQUIRE(el.at(0) == FloatingPointOverflow(Location(path, 1)));
   REQUIRE(t0.kind() == Token::kLiteral);
   REQUIRE(t0.value().kind() == value::UntypedConstant::kFloat);
 }

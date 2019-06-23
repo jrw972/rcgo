@@ -16,18 +16,18 @@ namespace rcgo {
 void
 PopulateFileBlock(
     ast::Node* source_file, MutableBlock* file_block, Package* package,
-    ErrorReporter* error_reporter) {
+    ErrorList* error_list) {
   struct FileBlockVisitor : public ast::DefaultNodeVisitor {
     FileBlockVisitor(Package* a_package, MutableBlock* a_file_block,
-                     ErrorReporter* a_error_reporter)
+                     ErrorList* a_error_list)
         : package(a_package)
         , file_block(a_file_block)
-        , error_reporter(a_error_reporter)
+        , error_list(a_error_list)
     { }
 
     Package* package;
     MutableBlock* file_block;
-    ErrorReporter* error_reporter;
+    ErrorList* error_list;
 
     void DefaultAction(ast::Node* ast) override { abort(); /* NOT_COVERED */ }
 
@@ -49,7 +49,7 @@ PopulateFileBlock(
                pos != limit; ++pos) {
             symbol::Symbol* s = pos->second;
             if (s->exported) {
-              InsertSymbol(file_block, s, error_reporter);
+              InsertSymbol(file_block, s, error_list);
             }
           }
         } else if (ast->optional_identifier != nullptr) {
@@ -58,12 +58,12 @@ PopulateFileBlock(
               ast::Cast<ast::Identifier>(ast->optional_identifier);
           symbol::Package* ps = file_block->MakePackage(
               identifier->identifier, ast->location, p);
-          InsertSymbol(file_block, ps, error_reporter);
+          InsertSymbol(file_block, ps, error_list);
         } else {
           // Add the package using its identifier.
           symbol::Package* ps = file_block->MakePackage(
               p->name(), ast->location, p);
-          InsertSymbol(file_block, ps, error_reporter);
+          InsertSymbol(file_block, ps, error_list);
         }
       } else {
         // TODO(jrw972): Importing something that was not in config.yaml.
@@ -73,7 +73,7 @@ PopulateFileBlock(
     }
   };
 
-  FileBlockVisitor visitor(package, file_block, error_reporter);
+  FileBlockVisitor visitor(package, file_block, error_list);
   source_file->Accept(&visitor);
 }
 

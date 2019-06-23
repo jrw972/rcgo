@@ -15,14 +15,14 @@ namespace rcgo {
 
 void PopulatePackageBlock(
     const ast::SourceFiles& source_files, MutableBlock* package_block,
-    ErrorReporter* error_reporter) {
+    ErrorList* error_list) {
   struct PackageBlockVisitor : public ast::DefaultNodeVisitor {
     PackageBlockVisitor(
-        MutableBlock* a_package_block, ErrorReporter* a_error_reporter)
-        : package_block(a_package_block) , error_reporter(a_error_reporter) { }
+        MutableBlock* a_package_block, ErrorList* a_error_list)
+        : package_block(a_package_block) , error_list(a_error_list) { }
 
     MutableBlock* package_block;
-    ErrorReporter* error_reporter;
+    ErrorList* error_list;
 
     void DefaultAction(ast::Node* ast) override { abort(); /* NOT_COVERED */ }
 
@@ -36,7 +36,7 @@ void PopulatePackageBlock(
         assert(identifier != NULL);
         symbol::Constant* symbol = package_block->MakeConstant(
             identifier->identifier, identifier->location, ast);
-        InsertSymbol(package_block, symbol, error_reporter);
+        InsertSymbol(package_block, symbol, error_list);
         ast->constants.push_back(symbol);
       }
     }
@@ -50,7 +50,7 @@ void PopulatePackageBlock(
       assert(identifier != NULL);
       symbol::Type* symbol = package_block->MakeType(
           identifier->identifier, identifier->location, ast);
-      InsertSymbol(package_block, symbol, error_reporter);
+      InsertSymbol(package_block, symbol, error_list);
       ast->type = symbol;
     }
 
@@ -60,7 +60,7 @@ void PopulatePackageBlock(
         assert(identifier != NULL);
         symbol::Variable* symbol = package_block->MakeVariable(
             identifier->identifier, identifier->location, ast);
-        InsertSymbol(package_block, symbol, error_reporter);
+        InsertSymbol(package_block, symbol, error_list);
         ast->variables.push_back(symbol);
       }
     }
@@ -70,12 +70,12 @@ void PopulatePackageBlock(
       assert(identifier != NULL);
       symbol::Function* symbol = package_block->MakeFunction(
           identifier->identifier, identifier->location, ast);
-      InsertSymbol(package_block, symbol, error_reporter);
+      InsertSymbol(package_block, symbol, error_list);
       ast->function = symbol;
     }
   };
 
-  PackageBlockVisitor visitor(package_block, error_reporter);
+  PackageBlockVisitor visitor(package_block, error_list);
   for (ast::Node* source_file : source_files) {
     source_file->Accept(&visitor);
   }

@@ -16,15 +16,18 @@
 
 namespace rcgo {
 namespace test {
+namespace {
+char const* path = "test string";
+}
 
 #define PARSE_NODE_SUCCESS(method, str, args...) \
   TEST_CASE("Parser::" #method "(" #args ")" " on \"" str "\" success") { \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 1, &abort_handler);                            \
-    StringByteStream seq(str);                                          \
-    Parser parser(&seq, &er, ss);                                       \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, str);                                    \
+    Parser parser(&seq, &el, ss);                                       \
     ast::Node* node = parser.method(args);                              \
-    REQUIRE(er.Empty());                                                \
+    REQUIRE(el.empty());                                                \
     REQUIRE(node != NULL);                                              \
     delete node;                                                        \
   }
@@ -32,46 +35,46 @@ namespace test {
 #define PARSE_LIST_SUCCESS(method, str, args...) \
   TEST_CASE("Parser::" #method "(" #args ")" " on \"" str "\" success") { \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 1, &abort_handler);                            \
-    StringByteStream seq(str);                                          \
-    Parser parser(&seq, &er, ss);                                       \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, str);                                    \
+    Parser parser(&seq, &el, ss);                                       \
     ast::ListType list = parser.method(args);                           \
-    REQUIRE(er.Empty());                                                \
-    delete(new ast::Struct(location, list));                            \
+    REQUIRE(el.empty());                                                \
+    delete(new ast::Struct(Location(), list));                          \
   }
 
-#define PARSE_NODE_FAILURE(method, str, type, err, args...) \
+#define PARSE_NODE_FAILURE(method, str, type, err, args...)             \
   TEST_CASE("Parser::" #method "(" #args ")" " on \"" str "\" failure") { \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 0, &abort_handler);                            \
-    StringByteStream seq(str);                                          \
-    Parser parser(&seq, &er, ss);                                       \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, str);                                    \
+    Parser parser(&seq, &el, ss);                                       \
     ast::Node* node = parser.method(args);                              \
-    REQUIRE(er.At(0) == std::string(err));                              \
+    REQUIRE(el.at(0) == err);                                           \
     REQUIRE(node != NULL);                                              \
     REQUIRE(dynamic_cast<type*>(node) != NULL);                         \
     delete node;                                                        \
   }
 
-#define PARSE_LIST_FAILURE(method, str, err, args...) \
+#define PARSE_LIST_FAILURE(method, str, err, args...)                   \
   TEST_CASE("Parser::" #method "(" #args ")" " on \"" str "\" failure") { \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 0, &abort_handler);                            \
-    StringByteStream seq(str);                                          \
-    Parser parser(&seq, &er, ss);                                       \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, str);                                    \
+    Parser parser(&seq, &el, ss);                                       \
     ast::ListType list = parser.method(args);                           \
-    REQUIRE(er.At(0) == std::string(err));                              \
-    delete(new ast::Struct(location, list));                            \
+    REQUIRE(el.at(0) == err);                                           \
+    delete(new ast::Struct(Location(), list));                          \
   }
 
-#define PARSE_NULL(method, str, err, args...) \
+#define PARSE_NULL(method, str, err, args...)                           \
   TEST_CASE("Parser::" #method "(" #args ")" " on \"" str "\" failure") { \
     std::stringstream ss;                                               \
-    ErrorReporter er(ss, 0, &abort_handler);                            \
-    StringByteStream seq(str);                                          \
-    Parser parser(&seq, &er, ss);                                       \
+    ErrorList el;                                                       \
+    StringByteStream seq(path, str);                                    \
+    Parser parser(&seq, &el, ss);                                       \
     ast::Node* node = parser.method(args);                              \
-    REQUIRE(er.At(0) == std::string(err));                              \
+    REQUIRE(el.at(0) == err);                                           \
     REQUIRE(node == NULL);                                              \
   }
 
@@ -260,105 +263,103 @@ PARSE_NODE_SUCCESS(UnaryExpr, "x");
 PARSE_NODE_SUCCESS(VarDecl, "var(x int; y float = 3; z = 5)");
 PARSE_NODE_SUCCESS(VarDecl, "var x int");
 
-Location loc = Location::Make("undefined", 1);
-
 PARSE_NODE_FAILURE(ConstDecl, "const( func )", ast::ConstDecl,
-                   Expected1(loc, Token::kIdentifier));
+                   Expected1(Location(path, 1), Token::kIdentifier));
 PARSE_NODE_FAILURE(ConstDecl, "const( x; x T = 1 y; y )", ast::ConstDecl,
-                   Expected1(loc, Token::kRightParen));
+                   Expected1(Location(path, 1), Token::kRightParen));
 PARSE_NODE_FAILURE(ConstDecl, "const 4", ast::ConstDecl,
-                   ExpectedASpecificationOrGroup(loc));
+                   ExpectedASpecificationOrGroup(Location(path, 1)));
 PARSE_NODE_FAILURE(ConstSpec, "x int = 4, 3", ast::ConstSpec,
-                   ExpectedNExpressions(loc, 1));
+                   ExpectedNExpressions(Location(path, 1), 1));
 PARSE_NODE_FAILURE(ImportDecl, "import( `x`; `y` func; `z` )", ast::ImportDecl,
-                   Expected1(loc, Token::kRightParen));
+                   Expected1(Location(path, 1), Token::kRightParen));
 PARSE_NODE_FAILURE(ImportDecl, "import( func )", ast::ImportDecl,
-                   Expected1(loc, Token::kRightParen));
+                   Expected1(Location(path, 1), Token::kRightParen));
 PARSE_NODE_FAILURE(LiteralValue, "{ 1, func, 2 }", ast::LiteralValue,
-                   Expected1(loc, Token::kLeftParen));
-PARSE_NODE_FAILURE(Operand, "+", ast::Error, ExpectedAnOperand(loc));
+                   Expected1(Location(path, 1), Token::kLeftParen));
+PARSE_NODE_FAILURE(Operand, "+", ast::Error, ExpectedAnOperand(Location(path, 1)));
 PARSE_LIST_FAILURE(Parameters, "(c chan *int)",
-                   Expected1(loc, Token::kRightParen))
+                   Expected1(Location(path, 1), Token::kRightParen))
 PARSE_LIST_FAILURE(Parameters, "(x T, 4, y T)",
-                   Expected1(loc, Token::kIdentifier));
+                   Expected1(Location(path, 1), Token::kIdentifier));
 PARSE_LIST_FAILURE(Parameters, "(x T, x 4, y T)",
-                   ExpectedAType(loc));
+                   ExpectedAType(Location(path, 1)));
 PARSE_LIST_FAILURE(Parameters, "(x, *y, z T)",
-                   Expected1(loc, Token::kIdentifier));
+                   Expected1(Location(path, 1), Token::kIdentifier));
 PARSE_LIST_FAILURE(Parameters, "(x, y ... T1, z ... T2)",
-                   IllegalVariadicParameter(loc));
+                   IllegalVariadicParameter(Location(path, 1)));
 PARSE_NODE_FAILURE(PrimaryExpr, "x[4 type]", ast::SliceOp,
-                   Expected1(loc, Token::kColon));
-PARSE_NODE_FAILURE(PrimaryExpr, "x[4:5 type]", ast::SliceOp, InvalidSlice(loc));
-PARSE_NODE_FAILURE(PrimaryExpr, "x[:4 type]", ast::SliceOp, InvalidSlice(loc));
+                   Expected1(Location(path, 1), Token::kColon));
+PARSE_NODE_FAILURE(PrimaryExpr, "x[4:5 type]", ast::SliceOp, InvalidSlice(Location(path, 1)));
+PARSE_NODE_FAILURE(PrimaryExpr, "x[:4 type]", ast::SliceOp, InvalidSlice(Location(path, 1)));
 PARSE_NODE_FAILURE(SimpleStmt, "x, y", ast::ExpressionStatement,
-                   UnexpectedExpressionList(loc));
+                   UnexpectedExpressionList(Location(path, 1)));
 PARSE_NODE_FAILURE(SimpleStmt, "x, y++", ast::Increment,
-                   UnexpectedExpressionList(loc));
+                   UnexpectedExpressionList(Location(path, 1)));
 PARSE_NODE_FAILURE(SimpleStmt, "x, y--", ast::Decrement,
-                   UnexpectedExpressionList(loc));
+                   UnexpectedExpressionList(Location(path, 1)));
 PARSE_NODE_FAILURE(SourceFile, "package mypackage; import func; var x T",
-                   ast::SourceFile, ExpectedASpecificationOrGroup(loc));
+                   ast::SourceFile, ExpectedASpecificationOrGroup(Location(path, 1)));
 PARSE_NODE_FAILURE(SourceFile, "package mypackage; range; var x T",
-                   ast::SourceFile, ExpectedADeclaration(loc));
+                   ast::SourceFile, ExpectedADeclaration(Location(path, 1)));
 PARSE_NODE_FAILURE(Statement, "if true { } else blah", ast::If,
-                   Expected2(loc, Token::kIf, Token::kLeftBrace));
+                   Expected2(Location(path, 1), Token::kIf, Token::kLeftBrace));
 PARSE_NODE_FAILURE(Statement, "switch x 3", ast::Switch,
-                   Expected2(loc, Token::kLeftBrace, Token::kSemicolon));
+                   Expected2(Location(path, 1), Token::kLeftBrace, Token::kSemicolon));
 PARSE_LIST_FAILURE(StatementList, "s; func; v;",
-                   Expected1(loc, Token::kLeftParen));
+                   Expected1(Location(path, 1), Token::kLeftParen));
 PARSE_LIST_FAILURE(StatementList, "s; t u; v;",
-                   Expected1(loc, Token::kSemicolon));
+                   Expected1(Location(path, 1), Token::kSemicolon));
 PARSE_NODE_FAILURE(Type, "interface { 4 4 4 ; f() }", ast::Interface,
-                   ExpectedAMethodSpecification(loc));
+                   ExpectedAMethodSpecification(Location(path, 1)));
 PARSE_NODE_FAILURE(Type, "interface { f() type", ast::Interface,
-                   Expected1(loc, Token::kSemicolon));
+                   Expected1(Location(path, 1), Token::kSemicolon));
 PARSE_NODE_FAILURE(Type, "interface { f(); x + y; g() }", ast::Interface,
-                   Expected1(loc, Token::kLeftParen));
+                   Expected1(Location(path, 1), Token::kLeftParen));
 PARSE_NODE_FAILURE(Type, "struct { 4 4 4 ; x T }", ast::Struct,
-                   ExpectedAFieldDeclaration(loc));
+                   ExpectedAFieldDeclaration(Location(path, 1)));
 PARSE_NODE_FAILURE(Type, "struct { x T; x + y; y T }", ast::Struct,
-                   ExpectedAType(loc));
+                   ExpectedAType(Location(path, 1)));
 PARSE_NODE_FAILURE(TypeDecl, "type( T int; U float func; V float )",
-                   ast::TypeDecl, Expected1(loc, Token::kRightParen));
+                   ast::TypeDecl, Expected1(Location(path, 1), Token::kRightParen));
 PARSE_NODE_FAILURE(TypeDecl, "type( func )", ast::TypeDecl,
-                   Expected1(loc, Token::kIdentifier));
+                   Expected1(Location(path, 1), Token::kIdentifier));
 PARSE_NODE_FAILURE(TypeDecl, "type 4", ast::TypeDecl,
-                   ExpectedASpecificationOrGroup(loc));
+                   ExpectedASpecificationOrGroup(Location(path, 1)));
 PARSE_NODE_FAILURE(VarDecl, "var( func )", ast::VarDecl,
-                   Expected1(loc, Token::kIdentifier));
+                   Expected1(Location(path, 1), Token::kIdentifier));
 PARSE_NODE_FAILURE(VarDecl, "var( x = 1; y T = 1 a; z = 3 )", ast::VarDecl,
-                   Expected1(loc, Token::kRightParen));
+                   Expected1(Location(path, 1), Token::kRightParen));
 PARSE_NODE_FAILURE(VarDecl, "var 4", ast::VarDecl,
-                   ExpectedASpecificationOrGroup(loc));
+                   ExpectedASpecificationOrGroup(Location(path, 1)));
 
-PARSE_NULL(Declaration, "not_a_decl", ExpectedADeclaration(loc));
-PARSE_NULL(FieldDecl, "4", ExpectedAFieldDeclaration(loc));
-PARSE_NULL(MethodSpec, "4()", ExpectedAMethodSpecification(loc));
-PARSE_NULL(TopLevelDecl, "not_a_decl", ExpectedADeclaration(loc));
+PARSE_NULL(Declaration, "not_a_decl", ExpectedADeclaration(Location(path, 1)));
+PARSE_NULL(FieldDecl, "4", ExpectedAFieldDeclaration(Location(path, 1)));
+PARSE_NULL(MethodSpec, "4()", ExpectedAMethodSpecification(Location(path, 1)));
+PARSE_NULL(TopLevelDecl, "not_a_decl", ExpectedADeclaration(Location(path, 1)));
 
 TEST_CASE("Parser::Parser(...)") {
   std::stringstream ss;
-  ErrorReporter er(ss, 1, &abort_handler);
-  StringByteStream seq("");
-  Parser parser(&seq, &er, ss);
+  ErrorList el;
+  StringByteStream seq(path, "");
+  Parser parser(&seq, &el, ss);
   REQUIRE(parser.trace() == false);
 }
 
 TEST_CASE("Parser::SetTrace()") {
   std::stringstream ss;
-  ErrorReporter er(ss, 1, &abort_handler);
-  StringByteStream seq("");
-  Parser parser(&seq, &er, ss);
+  ErrorList el;
+  StringByteStream seq(path, "");
+  Parser parser(&seq, &el, ss);
   parser.trace(true);
   REQUIRE(parser.trace() == true);
 }
 
 TEST_CASE("Parser tracing") {
   std::stringstream ss;
-  ErrorReporter er(ss, 1, &abort_handler);
-  StringByteStream seq("x");
-  Parser parser(&seq, &er, ss);
+  ErrorList el;
+  StringByteStream seq(path, "x");
+  Parser parser(&seq, &el, ss);
   parser.trace(true);
   ast::Node* node = parser.Operand();
   REQUIRE(node != NULL);

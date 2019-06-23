@@ -15,16 +15,16 @@
 namespace rcgo {
 
 void DefineSymbols(ast::Node* source_file, Block* file_block,
-                   type::Factory* type_factory, ErrorReporter* error_reporter) {
+                   type::Factory* type_factory, ErrorList* error_list) {
   struct Visitor : public ast::DefaultNodeVisitor {
     Visitor(Block* a_file_block, type::Factory* a_type_factory,
-            ErrorReporter* a_error_reporter)
+            ErrorList* a_error_list)
         : file_block(a_file_block), type_factory(a_type_factory),
-          error_reporter(a_error_reporter) { }
+          error_list(a_error_list) { }
 
     Block* file_block;
     type::Factory* type_factory;
-    ErrorReporter* error_reporter;
+    ErrorList* error_list;
 
     void DefaultAction(ast::Node* ast) override { abort(); /* NOT_COVERED */ }
 
@@ -32,24 +32,24 @@ void DefineSymbols(ast::Node* source_file, Block* file_block,
 
     void Visit(ast::ConstSpec* ast) override {
       for (symbol::Constant* constant : ast->constants) {
-        DefineSymbol(constant, file_block, type_factory, error_reporter);
+        DefineSymbol(constant, file_block, type_factory, error_list);
       }
     }
 
     void Visit(ast::TypeDecl* ast) override { VisitAll(ast->type_specs); }
 
     void Visit(ast::TypeSpec* ast) override {
-      DefineSymbol(ast->type, file_block, type_factory, error_reporter);
+      DefineSymbol(ast->type, file_block, type_factory, error_list);
     }
 
     void Visit(ast::VarSpec* ast) override {
       for (symbol::Variable* variable : ast->variables) {
-        DefineSymbol(variable, file_block, type_factory, error_reporter);
+        DefineSymbol(variable, file_block, type_factory, error_list);
       }
     }
 
     void Visit(ast::FuncDecl* ast) override {
-      DefineSymbol(ast->function, file_block, type_factory, error_reporter);
+      DefineSymbol(ast->function, file_block, type_factory, error_list);
     }
 
     void Visit(ast::MethodDecl* ast) override {
@@ -58,7 +58,7 @@ void DefineSymbols(ast::Node* source_file, Block* file_block,
     }
   };
 
-  Visitor visitor(file_block, type_factory, error_reporter);
+  Visitor visitor(file_block, type_factory, error_list);
   source_file->Accept(&visitor);
 }
 

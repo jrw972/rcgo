@@ -19,13 +19,13 @@ namespace rcgo {
 // instance of ErrorType otherwise.
 const type::Type* ProcessType(
     ast::Node* node, Block* block, type::Factory* type_factory,
-    ErrorReporter* error_reporter);
+    ErrorList* error_list);
 
 // Like process_type but specifically for function types such as those
 // in interfaces.
 const type::Function* ProcessFunction(
     ast::Signature* signature, Block* block, type::Factory* type_factory,
-    ErrorReporter* error_reporter);
+    ErrorList* error_list);
 
 }  // namespace rcgo
 

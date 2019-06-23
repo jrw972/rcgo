@@ -18,7 +18,11 @@ namespace rcgo {
 // Checks that every source file has the same package name and returns
 // a package name.
 std::string GetAndCheckPackageName(const ast::SourceFiles& source_files,
-                                   ErrorReporter* error_reporter);
+                                   ErrorList* error_list);
+
+Error PackageMismatch(
+      const Location& a_location, const std::string& a_expected_package,
+      const std::string& a_package);
 
 }  // namespace rcgo
 

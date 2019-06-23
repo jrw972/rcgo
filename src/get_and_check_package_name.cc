@@ -13,12 +13,12 @@
 namespace rcgo {
 
 std::string GetAndCheckPackageName(const ast::SourceFiles& source_files,
-                                   ErrorReporter* error_reporter) {
+                                   ErrorList* error_list) {
   struct PackageNameVisitor : public ast::DefaultNodeVisitor {
-    ErrorReporter* error_reporter;
+    ErrorList* error_list;
 
-    explicit PackageNameVisitor(ErrorReporter* a_error_reporter)
-        : error_reporter(a_error_reporter) {}
+    explicit PackageNameVisitor(ErrorList* a_error_list)
+        : error_list(a_error_list) {}
 
     // TODO(jrw972):  Cannot be the blank identifier.
     std::string package_name;
@@ -29,7 +29,7 @@ std::string GetAndCheckPackageName(const ast::SourceFiles& source_files,
         if (package_name.empty()) {
           package_name = package->identifier;
         } else if (package_name != package->identifier) {
-          error_reporter->Insert(
+          error_list->push_back(
               PackageMismatch(package->location, package_name,
                               package->identifier));
         }
@@ -37,7 +37,7 @@ std::string GetAndCheckPackageName(const ast::SourceFiles& source_files,
     }
   };
 
-  PackageNameVisitor visitor(error_reporter);
+  PackageNameVisitor visitor(error_list);
   for (ast::SourceFiles::const_iterator pos = source_files.begin (),
            limit = source_files.end(); pos != limit; ++pos) {
     ast::Node* source_file = *pos;
@@ -45,6 +45,15 @@ std::string GetAndCheckPackageName(const ast::SourceFiles& source_files,
   }
 
   return visitor.package_name;
+}
+
+Error PackageMismatch(
+      const Location& a_location, const std::string& a_expected_package,
+      const std::string& a_package) {
+  Error error(a_location);
+  error.message << "error: expected package " << a_expected_package
+                << " but found " << a_package << std::endl;
+  return error;
 }
 
 }  // namespace rcgo

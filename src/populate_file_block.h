@@ -18,7 +18,7 @@ namespace rcgo {
 // Populates file_block by processing the import declarations in source_file.
 void PopulateFileBlock(
     ast::Node* source_file, MutableBlock* file_block, Package* package,
-    ErrorReporter* error_reporter);
+    ErrorList* error_list);
 
 }  // namespace rcgo
 

@@ -23,21 +23,7 @@ struct Handler : public TerminationHandlerI {
 };
 
 struct MyError : public Error {
-  void Print(std::ostream& out) const override { out << "test"; }
 };
-
-TEST_CASE("ErrorReporter::insert ()") {
-  std::stringstream ss;
-  Handler h;
-  ErrorReporter er(ss, 1, &h);
-  REQUIRE(er.Empty());
-  REQUIRE(er.Count() == 0);
-  er.Insert(MyError());
-  REQUIRE(er.At(0) == "test");
-  REQUIRE(!er.Empty());
-  REQUIRE(er.Count() == 1);
-  REQUIRE(h.terminate_was_called);
-}
 
 }  // namespace test
 }  // namespace rcgo

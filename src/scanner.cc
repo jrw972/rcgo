@@ -19,15 +19,17 @@
 
 namespace rcgo {
 
-static Runet octalValue(Runet s) {
+namespace {
+
+Runet octalValue(Runet s) {
   return s - '0';
 }
 
-static Runet decimalValue(Runet s) {
+Runet decimalValue(Runet s) {
   return s - '0';
 }
 
-static Runet hexValue(Runet s) {
+Runet hexValue(Runet s) {
   if (s >= '0' && s <= '9') {
     return s - '0';
   } else if (s >= 'a' && s <= 'f') {
@@ -36,6 +38,7 @@ static Runet hexValue(Runet s) {
     return s - 'A' + 10;
   }
 }
+}  // namespace
 
 void Scanner::Populate(MapType* map, const Token& token) {
   std::stringstream ss;
@@ -44,9 +47,9 @@ void Scanner::Populate(MapType* map, const Token& token) {
 }
 
 Scanner::Scanner(ByteStreamI* byteStream,
-                 ErrorReporter* aErrorReporter)
-    : m_utf8_scanner(byteStream, aErrorReporter)
-    , m_error_reporter(aErrorReporter)
+                 ErrorList* a_error_list)
+    : m_utf8_scanner(byteStream, a_error_list)
+    , m_error_list(a_error_list)
     , m_last_token(Token::Make(m_utf8_scanner.GetLocation(), Token::kEnd)) {
   Populate(&m_keywords, Token::Make(Token::kBreak));
   Populate(&m_keywords, Token::Make(Token::kCase));
@@ -261,7 +264,7 @@ void Scanner::Start() {
   } else {
     std::string x;
     Append(&x, r0);
-    m_error_reporter->Insert(StrayRune(m_utf8_scanner.GetLocation(), x));
+    m_error_list->push_back(StrayRune(m_utf8_scanner.GetLocation(), x));
     m_utf8_scanner.Consume();
     // Recur.
     Start();
@@ -289,7 +292,7 @@ void Scanner::GeneralComment() {
       m_utf8_scanner.Consume(2);
       break;
     } else if (r0 == kEndRune) {
-      m_error_reporter->Insert(
+      m_error_list->push_back(
           UnterminatedGeneralComment(m_utf8_scanner.GetLocation()));
       break;
     }
@@ -413,7 +416,7 @@ mpf_class Scanner::FormFloat(const mpz_class& mantissa,
     }
     t *= t;
     if (t < one) {
-      m_error_reporter->Insert(
+      m_error_list->push_back(
           FloatingPointOverflow(m_utf8_scanner.GetLocation()));
       return zero;
     }
@@ -429,7 +432,7 @@ mpf_class Scanner::FormFloat(const mpz_class& mantissa,
 
   if (m < one) {
     // Difficult to test because it requires a large mantissa.
-    m_error_reporter->Insert(
+    m_error_list->push_back(
         FloatingPointOverflow(m_utf8_scanner.GetLocation()));  // NOT_COVERED
     return zero;  // NOT_COVERED
   }
@@ -441,7 +444,7 @@ mpf_class Scanner::FormFloat(const mpz_class& mantissa,
     const bool rSmall = m < 1;
     if (eSmall && rSmall) {
       // Difficult to test because it requires a large mantissa.
-      m_error_reporter->Insert(
+      m_error_list->push_back(
           FloatingPointOverflow(m_utf8_scanner.GetLocation()));  // NOT_COVERED
       return zero;  // NOT_COVERED
     }
@@ -451,7 +454,7 @@ mpf_class Scanner::FormFloat(const mpz_class& mantissa,
     const bool rSmall = m < 1;
     if (!eSmall && rSmall) {
       // Difficult to test because it requires a large mantissa.
-      m_error_reporter->Insert(
+      m_error_list->push_back(
           FloatingPointOverflow(m_utf8_scanner.GetLocation()));  // NOT_COVERED
       return zero;  // NOT_COVERED
     }
@@ -527,7 +530,7 @@ void Scanner::Decimals(mpz_class* v, mpz_class* digits) {
   }
 
   if (*digits == 0) {
-    m_error_reporter->Insert(
+    m_error_list->push_back(
         ExpectedDecimalDigit(m_utf8_scanner.GetLocation()));
   }
 }
@@ -575,13 +578,13 @@ void Scanner::RuneLiteral() {
   switch (r) {
     case kEndRune:
     case NEWLINE:
-      m_error_reporter->Insert(
+      m_error_list->push_back(
           IncompleteRuneLiteral(m_utf8_scanner.GetLocation()));
       Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
                               value::UntypedConstant::MakeRune(s)));
       return;
     case '\'':
-      m_error_reporter->Insert(
+      m_error_list->push_back(
           EmptyRuneLiteral(m_utf8_scanner.GetLocation()));
       Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
                               value::UntypedConstant::MakeRune(s)));
@@ -603,7 +606,7 @@ void Scanner::RuneLiteral() {
       m_utf8_scanner.Consume();
       break;
     } else if (r == kEndRune || r == NEWLINE) {
-      m_error_reporter->Insert(
+      m_error_list->push_back(
           IncompleteRuneLiteral(m_utf8_scanner.GetLocation()));
       break;
     } else {
@@ -613,7 +616,7 @@ void Scanner::RuneLiteral() {
   }
 
   if (extra && !error) {
-    m_error_reporter->Insert(
+    m_error_list->push_back(
         ExtraCharactersInRuneLiteral(m_utf8_scanner.GetLocation()));
   }
 
@@ -648,12 +651,12 @@ Runet Scanner::EscapedRune(bool* error, bool* isByte, bool escapeSingleQuote,
       Runet s = (octalValue(r0) << 6) | (octalValue(r1) << 3) |
           (octalValue(r2) << 0);
       if (s > 255) {
-        m_error_reporter->Insert(
+        m_error_list->push_back(
             OctalValueOutOfRange(m_utf8_scanner.GetLocation()));
       }
       return s;
     } else {
-      m_error_reporter->Insert(
+      m_error_list->push_back(
           TooFewOctalDigitsInRuneLiteral(m_utf8_scanner.GetLocation()));
       *error = true;
       return 0;
@@ -667,7 +670,7 @@ Runet Scanner::EscapedRune(bool* error, bool* isByte, bool escapeSingleQuote,
         m_utf8_scanner.Consume(3);
         return(hexValue(r1) << 4) | (hexValue(r2) << 0);
       } else {
-        m_error_reporter->Insert(
+        m_error_list->push_back(
             TooFewHexadecimalDigitsInRuneLiteral(m_utf8_scanner.GetLocation()));
         *error = true;
         return 0;
@@ -680,12 +683,12 @@ Runet Scanner::EscapedRune(bool* error, bool* isByte, bool escapeSingleQuote,
         Runet s = (hexValue(r1) << 12) | (hexValue(r2) << 8) |
             (hexValue(r3) << 4) | (hexValue(r4) << 0);
         if (!IsUnicodeChar(s)) {
-          m_error_reporter->Insert(
+          m_error_list->push_back(
               InvalidUnicodeCodePoint(m_utf8_scanner.GetLocation()));
         }
         return s;
       } else {
-        m_error_reporter->Insert(
+        m_error_list->push_back(
             TooFewHexadecimalDigitsInRuneLiteral(m_utf8_scanner.GetLocation()));
         *error = true;
         return 0;
@@ -701,12 +704,12 @@ Runet Scanner::EscapedRune(bool* error, bool* isByte, bool escapeSingleQuote,
             (hexValue(r4) << 16) | (hexValue(r5) << 12) | (hexValue(r6) << 8) |
             (hexValue(r7) << 4) | (hexValue(r8) << 0);
         if (!IsUnicodeChar(s)) {
-          m_error_reporter->Insert(
+          m_error_list->push_back(
               InvalidUnicodeCodePoint(m_utf8_scanner.GetLocation()));
         }
         return s;
       } else {
-        m_error_reporter->Insert(
+        m_error_list->push_back(
             TooFewHexadecimalDigitsInRuneLiteral(m_utf8_scanner.GetLocation()));
         *error = true;
         return 0;
@@ -750,7 +753,7 @@ Runet Scanner::EscapedRune(bool* error, bool* isByte, bool escapeSingleQuote,
       break;
   }
 
-  m_error_reporter->Insert(IllegalEscapeSequence(m_utf8_scanner.GetLocation()));
+  m_error_list->push_back(IllegalEscapeSequence(m_utf8_scanner.GetLocation()));
   *error = true;
   return 0;
 }
@@ -766,7 +769,7 @@ void Scanner::RawStringLiteral() {
     r = m_utf8_scanner.Peek();
     switch (r) {
       case kEndRune:
-        m_error_reporter->Insert(
+        m_error_list->push_back(
             IncompleteStringLiteral(m_utf8_scanner.GetLocation()));
         Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
                                 value::UntypedConstant::MakeString(s)));
@@ -800,7 +803,7 @@ void Scanner::InterpretedStringLiteral() {
     switch (r) {
       case kEndRune:
       case NEWLINE:
-        m_error_reporter->Insert(
+        m_error_list->push_back(
             IncompleteStringLiteral(m_utf8_scanner.GetLocation()));
         Push(Token::MakeLiteral(m_utf8_scanner.GetLocation(),
                                 value::UntypedConstant::MakeString(s)));
@@ -919,9 +922,93 @@ void Scanner::EndOfWord() {
  done:
 
   if (!s.empty()) {
-    m_error_reporter->Insert(
+    m_error_list->push_back(
         ExtraCharactersInToken(m_utf8_scanner.GetLocation()));
   }
+}
+
+Error StrayRune(const Location& a_location, const std::string& a_rune) {
+  Error error(a_location);
+  error.message << "error: stray rune '" << a_rune << "'" << std::endl;
+  return error;
+}
+
+Error UnterminatedGeneralComment(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: unterminated comment" << std::endl;
+  return error;
+}
+
+Error FloatingPointOverflow(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: floating point overflow" << std::endl;
+  return error;
+}
+
+Error ExpectedDecimalDigit(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: expected decimal digit" << std::endl;
+  return error;
+}
+
+Error IncompleteRuneLiteral(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: incomplete rune literal" << std::endl;
+  return error;
+}
+
+Error EmptyRuneLiteral(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: empty rune literal" << std::endl;
+  return error;
+}
+
+Error ExtraCharactersInRuneLiteral(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: extra characters in rune literal" << std::endl;
+  return error;
+}
+
+Error OctalValueOutOfRange(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: octal value out of range" << std::endl;
+  return error;
+}
+
+Error TooFewOctalDigitsInRuneLiteral(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: too few octal digits in rune literal" << std::endl;
+  return error;
+}
+
+Error TooFewHexadecimalDigitsInRuneLiteral(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: too few hexadecimal digits in rune literal" << std::endl;
+  return error;
+}
+
+Error InvalidUnicodeCodePoint(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: invalid unicode code point" << std::endl;
+  return error;
+}
+
+Error IllegalEscapeSequence(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: illegal escape sequence" << std::endl;
+  return error;
+}
+
+Error IncompleteStringLiteral(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: incomplete string literal" << std::endl;
+  return error;
+}
+
+Error ExtraCharactersInToken(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: extra characters in token" << std::endl;
+  return error;
 }
 
 }  // namespace rcgo

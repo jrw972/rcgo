@@ -38,6 +38,8 @@ struct ErrorReporter {
   std::vector<std::string> m_errors;
 };
 
+void ReportErrors(std::ostream& out, ErrorList const& error_list);
+
 }  // namespace rcgo
 
 #endif  // SRC_ERROR_REPORTER_H_

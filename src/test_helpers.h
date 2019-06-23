@@ -24,17 +24,11 @@ struct AcceptTestVisitor : public V {
   void DefaultAction(T* t) override { this->t = t; }
 };
 
-struct AbortHandler : public TerminationHandlerI {
-  void Terminate() override { abort(); }
-};
-
-static AbortHandler abort_handler;
-static Location location = Location::Make("undefined", 1);
-static ImportLocation import_location("path", Location::Make("undefined", 1));
+static ImportLocation import_location("path", Location("undefined", 1));
 
 struct TestSymbol : public symbol::Symbol {
   TestSymbol()
-      : Symbol("identifier", Location::Make("undefined", 1), nullptr, nullptr)
+      : Symbol("identifier", Location("undefined", 1), nullptr, nullptr)
   {}
   void Accept(symbol::Visitor* visitor) override {}
 };

@@ -150,7 +150,7 @@ ast::Node* Parser::Type() {
     default:
       {
         Location loc = Next().location();
-        m_error_reporter->Insert(ExpectedAType(loc));
+        m_error_list->push_back(ExpectedAType(loc));
         return new ast::Error(loc);
       }
   }
@@ -228,7 +228,7 @@ ast::Node* Parser::FieldDecl() {
       }
 
     default:
-      m_error_reporter->Insert(ExpectedAFieldDeclaration(Next().location()));
+      m_error_list->push_back(ExpectedAFieldDeclaration(Next().location()));
       return NULL;
   }
 }
@@ -308,7 +308,7 @@ ast::ListType Parser::Parameters() {
     // TODO(jrw972):  Replace dynamic_casts with Cast.
     if (dynamic_cast<ast::Identifier*>(a) == NULL &&
         dynamic_cast<ast::Error*>(a) == NULL) {
-      m_error_reporter->Insert(Expected1(a->location, Token::kIdentifier));
+      m_error_list->push_back(Expected1(a->location, Token::kIdentifier));
     }
   }
 
@@ -342,7 +342,7 @@ ast::ListType Parser::Parameters() {
     ast::ParameterDecl* p =
         dynamic_cast<ast::ParameterDecl*>(parameters.at(idx));
     if (p->variadic) {
-      m_error_reporter->Insert(IllegalVariadicParameter(p->location));
+      m_error_list->push_back(IllegalVariadicParameter(p->location));
     }
   }
 
@@ -368,7 +368,7 @@ ast::Node* Parser::MethodSpec() {
     }
   }
 
-  m_error_reporter->Insert(ExpectedAMethodSpecification(Next().location()));
+  m_error_list->push_back(ExpectedAMethodSpecification(Next().location()));
   return NULL;
 }
 
@@ -427,7 +427,7 @@ ast::Node* Parser::Operand() {
     default:
       {
         Location loc = Next().location();
-        m_error_reporter->Insert(ExpectedAnOperand(loc));
+        m_error_list->push_back(ExpectedAnOperand(loc));
         return new ast::Error(loc);
       }
   }
@@ -473,7 +473,7 @@ ast::Node* Parser::Declaration() {
     case Token::kVar:
       return VarDecl();
     default:
-      m_error_reporter->Insert(ExpectedADeclaration(token.location()));
+      m_error_list->push_back(ExpectedADeclaration(token.location()));
       Next();
       return NULL;
   }
@@ -502,7 +502,7 @@ ast::Node* Parser::TopLevelDecl() {
       }
 
     default:
-      m_error_reporter->Insert(ExpectedADeclaration(token.location()));
+      m_error_list->push_back(ExpectedADeclaration(token.location()));
       Next();
       return NULL;
   }
@@ -537,7 +537,7 @@ ast::Node* Parser::ConstDecl() {
       }
 
     default:
-      m_error_reporter->Insert(
+      m_error_list->push_back(
           ExpectedASpecificationOrGroup(Next().location()));
       return new ast::ConstDecl(loc, children);
   }
@@ -567,7 +567,7 @@ ast::Node* Parser::ConstSpec() {
   }
   if (!expressionList.empty() &&
       identifierList.size() != expressionList.size()) {
-    m_error_reporter->Insert(
+    m_error_list->push_back(
         ExpectedNExpressions(token.location(), identifierList.size()));
   }
 
@@ -632,7 +632,7 @@ ast::Node* Parser::TypeDecl() {
       }
 
     default:
-      m_error_reporter->Insert(
+      m_error_list->push_back(
           ExpectedASpecificationOrGroup(Next().location()));
       return new ast::TypeDecl(loc, children);
   }
@@ -677,7 +677,7 @@ ast::Node* Parser::VarDecl() {
       }
 
     default:
-      m_error_reporter->Insert(
+      m_error_list->push_back(
           ExpectedASpecificationOrGroup(Next().location()));
       return new ast::VarDecl(loc, children);
   }
@@ -931,7 +931,7 @@ ast::Node* Parser::PrimaryExprSuffix(ast::Node* operand) {
         }
 
         Next();
-        m_error_reporter->Insert(InvalidSlice(loc));
+        m_error_list->push_back(InvalidSlice(loc));
         operand = new ast::SliceOp(loc, operand, low, high, capacity);
         --m_expression_level;
       }
@@ -1231,7 +1231,7 @@ ast::Node* Parser::SimpleStmt() {
   const Location loc = Peek().location();
   if (Peek().IsAssignOp()) {
     if (expressionList.size() > 1) {
-      m_error_reporter->Insert(UnexpectedExpressionList(loc));
+      m_error_list->push_back(UnexpectedExpressionList(loc));
     }
     Token k = Peek();
     Next();
@@ -1273,14 +1273,14 @@ ast::Node* Parser::SimpleStmt() {
   switch (Peek().kind()) {
     case Token::kIncrement:
       if (expressionList.size() > 1) {
-        m_error_reporter->Insert(UnexpectedExpressionList(loc));
+        m_error_list->push_back(UnexpectedExpressionList(loc));
       }
       Next();
       return new ast::Increment(loc, expressionList);
 
     case Token::kDecrement:
       if (expressionList.size() > 1) {
-        m_error_reporter->Insert(UnexpectedExpressionList(loc));
+        m_error_list->push_back(UnexpectedExpressionList(loc));
       }
       Next();
       return new ast::Decrement(loc, expressionList);
@@ -1295,7 +1295,7 @@ ast::Node* Parser::SimpleStmt() {
     default:
       // Do nothing.
       if (expressionList.size() > 1) {
-        m_error_reporter->Insert(UnexpectedExpressionList(loc));
+        m_error_list->push_back(UnexpectedExpressionList(loc));
       }
       return new ast::ExpressionStatement(loc, expressionList);
   }
@@ -1362,7 +1362,7 @@ ast::Node* Parser::IfStmt() {
     } else if (Peek() == Token::kLeftBrace) {
       return new ast::If (if_loc, statement, expression, block, Block());
     } else {
-      m_error_reporter->Insert(
+      m_error_list->push_back(
           Expected2(Next().location(), Token::kIf, Token::kLeftBrace));
       return new ast::If (if_loc, statement, expression, block,
                           new ast::Block(if_loc, ast::ListType()));
@@ -1410,7 +1410,7 @@ ast::Node* Parser::SwitchStmt() {
 
   m_expression_level = outer;
 
-  m_error_reporter->Insert(
+  m_error_list->push_back(
       Expected2(Next().location(), Token::kLeftBrace, Token::kSemicolon));
   return new ast::Switch (switch_loc, NULL, statement, ast::ListType());
 }
@@ -1601,7 +1601,7 @@ ast::Node* Parser::ImportDecl() {
       }
 
     default:
-      m_error_reporter->Insert(
+      m_error_list->push_back(
           ExpectedASpecificationOrGroup(Next().location()));
       return new ast::ImportDecl(loc, children);
   }
@@ -1659,7 +1659,7 @@ Token Parser::Next() {
 
 bool Parser::Want(Token::Kind kind) {
   if (!Got(kind)) {
-    m_error_reporter->Insert(Expected1(Peek().location(), kind));
+    m_error_list->push_back(Expected1(Peek().location(), kind));
     Next();
     return false;
   }
@@ -1696,10 +1696,111 @@ bool Parser::OptionalSemicolon(Token::Kind follow) {
     case Token::kRightBrace:
       return true;
     default:
-      m_error_reporter->Insert(Expected1(Peek().location(), follow));
+      m_error_list->push_back(Expected1(Peek().location(), follow));
       Advance(follow, Token::kEnd);
       return false;
   }
+}
+
+Error ExpectedAType(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: expected a type" << std::endl;
+  return error;
+}
+
+Error ExpectedAFieldDeclaration(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: expected a field declaration" << std::endl;
+  return error;
+}
+
+const char* aOrAn(const std::string& str) {
+  assert(!str.empty());
+
+  switch (str[0]) {
+    case 'a':
+    case 'A':
+    case 'e':
+    case 'E':
+    case 'i':
+    case 'I':
+    case 'o':
+    case 'O':
+    case 'u':
+    case 'U':
+      return "an";
+    default:
+      return "a";
+  }
+}
+
+Error Expected1(const Location& a_location, const Token::Kind a_expected) {
+  std::stringstream expectedString;
+  expectedString << a_expected;
+  Error error(a_location);
+  error.message << "error: expected " << aOrAn(expectedString.str()) << ' '
+                << expectedString.str() << std::endl;
+  return error;
+}
+
+Error Expected2(const Location& a_location, const Token::Kind a_expecteda,
+                const Token::Kind a_expectedb) {
+  std::stringstream expectedString1, expectedString2;
+  expectedString1 << a_expecteda;
+  expectedString2 << a_expectedb;
+  Error error(a_location);
+  error.message << "error: expected " << aOrAn(expectedString1.str()) << ' '
+                << expectedString1.str() << " or " << aOrAn(expectedString2.str()) << ' '
+                << expectedString2.str() << std::endl;
+  return error;
+}
+
+Error IllegalVariadicParameter(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: illegal variadic parameter" << std::endl;
+  return error;
+}
+
+Error ExpectedAMethodSpecification(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: expected a method specification" << std::endl;
+  return error;
+}
+
+Error ExpectedAnOperand(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: expected an operand" << std::endl;
+  return error;
+}
+
+Error ExpectedADeclaration(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: expected a declaration" << std::endl;
+  return error;
+}
+
+Error ExpectedASpecificationOrGroup(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: expected a specification or group" << std::endl;
+  return error;
+}
+
+Error ExpectedNExpressions(const Location& a_location, size_t a_n) {
+  Error error(a_location);
+  error.message << "error: expected " << a_n << " expressions" << std::endl;
+  return error;
+}
+
+Error InvalidSlice(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: invalid slice" << std::endl;
+  return error;
+}
+
+Error UnexpectedExpressionList(const Location& a_location) {
+  Error error(a_location);
+  error.message << "error: unexpected expression list" << std::endl;
+  return error;
 }
 
 }  // namespace rcgo
