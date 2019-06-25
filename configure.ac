@@ -22,7 +22,8 @@ AC_PROG_CXX()
 
 # Checks for libraries.
 AC_SEARCH_LIBS(__gmpz_init, gmp, , [AC_MSG_ERROR([GNU MP not found, see https://gmplib.org/])])
-AC_SEARCH_LIBS(_ZN4YAML8LoadFileERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE, yaml-cpp, , [AC_MSG_ERROR([yaml-cpp not found])])
+#AC_SEARCH_LIBS(_ZN4YAML8LoadFileERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE, yaml-cpp, , [AC_MSG_ERROR([yaml-cpp not found])])
+PKG_CHECK_MODULES([YAMLCPP], [yaml-cpp])
 
 # Checks for header files.
 

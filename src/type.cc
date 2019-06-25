@@ -561,5 +561,107 @@ Type const * Choose(Type const * x, Type const * y) {
   return x;
 }
 
+std::ostream& operator<< (std::ostream& out, type::Type const& type) {
+    struct visitor : public Visitor {
+        std::ostream& out;
+
+        visitor(std::ostream& a_out) : out(a_out) {}
+
+        void Visit(const Error& type) override {
+            out << "error";
+        }
+        void Visit(const Bool& type) override {
+            out << "bool";
+        }
+        void Visit(const Complex64& type) override {
+            out << "complex64";
+        }
+        void Visit(const Complex128& type) override {
+            out << "complex128";
+        }
+        void Visit(const Float32& type) override {
+            out << "float32";
+        }
+        void Visit(const Float64& type) override {
+            out << "float64";
+        }
+        void Visit(const Int& type) override {
+            out << "int";
+        }
+        void Visit(const Int8& type) override {
+            out << "int8";
+        }
+        void Visit(const Int16& type) override {
+            out << "int16";
+        }
+        void Visit(const Int32& type) override {
+            out << "int32";
+        }
+        void Visit(const Int64& type) override {
+            out << "int64";
+        }
+        void Visit(const String& type) override {
+            out << "string";
+        }
+        void Visit(const Uint& type) override {
+            out << "uint";
+        }
+        void Visit(const Uint8& type) override {
+            out << "uint8";
+        }
+        void Visit(const Uint16& type) override {
+            out << "uint16";
+        }
+        void Visit(const Uint32& type) override {
+            out << "uint32";
+        }
+        void Visit(const Uint64& type) override {
+            out << "uint64";
+        }
+        void Visit(const Uintptr& type) override {
+            out << "uintptr";
+        }
+        void Visit(const Array& type) override {
+            out << "[" << type.length << "]" << *type.element_type;
+        }
+        void Visit(const Function& type) override {
+            // TODO(jrw972)
+            abort();
+        }
+        void Visit(const Interface& type) override {
+            // TODO(jrw972)
+            abort();
+        }
+        void Visit(const Map& type) override {
+            // TODO(jrw972)
+            abort();
+        }
+        void Visit(const Pointer& type) override {
+            // TODO(jrw972)
+            abort();
+        }
+        void Visit(const Slice& type) override {
+            // TODO(jrw972)
+            abort();
+        }
+        void Visit(const Struct& type) override {
+            // TODO(jrw972)
+            abort();
+        }
+        void Visit(const DefinedType& type) override {
+            // TODO(jrw972)
+            abort();
+        }
+        void Visit(const Alias& type) override {
+            // TODO(jrw972)
+            abort();
+        }
+
+    };
+    visitor v(out);
+    type.Accept(&v);
+    return out;
+}
+
 }  // namespace type
 }  // namespace rcgo

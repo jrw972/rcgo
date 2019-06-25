@@ -171,7 +171,7 @@ struct AnonymousMethodSpec : public Node {
 
 struct MethodSpec : public Node {
   MethodSpec(const Location& a_location, Node* a_identifier, Node* a_signature)
-      : Node(location), identifier(a_identifier), signature(a_signature) {}
+      : Node(a_location), identifier(a_identifier), signature(a_signature) {}
   ~MethodSpec() override {
     Delete(identifier);
     Delete(signature);
@@ -263,7 +263,7 @@ struct CompositeLiteral : public Node {
 
 struct KeyedElement : public Node {
   KeyedElement(const Location& a_location, Node* a_key, Node* a_element)
-      : Node(location), optional_key(a_key), element(a_element) {}
+      : Node(a_location), optional_key(a_key), element(a_element) {}
   ~KeyedElement() override {
     Delete(optional_key);
     Delete(element);

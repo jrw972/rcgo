@@ -79,6 +79,7 @@ struct UntypedConstant {
   bool IsArithmetic() const;
   bool IsSigned() const;
   bool IsInteger() const;
+  bool IsIntegral() const;
   bool IsZero() const;
   bool IsString() const;
   bool IsBoolean() const;
@@ -133,7 +134,7 @@ struct UntypedConstant {
   static UntypedConstant PromoteTo(
       UntypedConstant const & a_x,
       Kind a_kind);
-  static UntypedConstant ToInteger(UntypedConstant const & x);
+  UntypedConstant ToInteger() const;
 
   Kind m_kind;
   bool m_boolean_value;

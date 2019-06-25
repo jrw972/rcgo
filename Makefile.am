@@ -51,7 +51,7 @@ src/upper_table.cc \
 src/utf8.h src/utf8.cc \
 src/value.h src/value.cc
 librcgo_la_CXXFLAGS = $(AM_CXXFLAGS) $(COVERAGE_CXXFLAGS)
-librcgo_la_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)  -lgmpxx -lgmp
+librcgo_la_LDFLAGS = $(AM_LDFLAGS) $(COVERAGE_LDFLAGS)  -lgmpxx -lgmp $(YAMLCPP_LIBS)
 
 # Unit testing
 LOG_DRIVER = $(SHELL) $(top_srcdir)/build-aux/catch-driver.sh

@@ -116,8 +116,7 @@ struct Value {
   static Value Modulo(Location const & location, Value* x, Value* y,
                       ErrorList* error_list);
   static Value LeftShift(Value* x, Value* y, ErrorList* error_list);
-  static Value RightShift(Location const & location, Value* x, Value* y,
-                          ErrorList* error_list);
+  static Value RightShift(Value* x, Value* y, ErrorList* error_list);
   static Value BitAnd(Location const & location, Value* x, Value* y,
                       ErrorList* error_list);
   static Value BitAndNot(Location const & location, Value* x, Value* y,
@@ -143,6 +142,7 @@ struct Value {
   bool IsComparable() const;
   bool IsSigned() const;
   bool IsInteger() const;
+  bool IsIntegral() const;
   bool IsZero() const;
   bool IsString() const;
   bool IsBoolean() const;
@@ -166,9 +166,11 @@ struct Value {
   ListType m_list;
 };
 
-std::ostream& operator<<(std::ostream & out, Value const & value);
+std::ostream& operator<<(std::ostream & out, value::Value const & value);
 
 Error CannotBeUsedInAnExpression(Value const* x);
+Error IsNotAnInteger(Value const* x);
+Error CannotConvert(Value const* x, type::Type const* type);
 
 }  // namespace value
 }  // namespace rcgo

@@ -183,6 +183,10 @@ bool UntypedConstant::IsInteger() const {
   }
 }
 
+bool UntypedConstant::IsIntegral() const {
+  return !ToInteger().IsError();
+}
+
 bool UntypedConstant::IsZero() const {
   switch (m_kind) {
     case kInteger:
@@ -206,18 +210,18 @@ bool UntypedConstant::IsBoolean() const {
   return m_kind == kBoolean;
 }
 
-UntypedConstant UntypedConstant::ToInteger(UntypedConstant const & a_x) {
-  assert(a_x.IsInitialized());
+UntypedConstant UntypedConstant::ToInteger() const {
+  assert(IsInitialized());
 
-  switch (a_x.m_kind) {
+  switch (m_kind) {
     case kInteger:
-      return a_x;
+      return *this;
     case kRune:
-      return MakeInteger(a_x.m_rune_value);
+      return MakeInteger(m_rune_value);
     case kFloat:
       {
-        mpz_class x(a_x.m_float_value);
-        if (a_x.m_float_value == mpf_class(x)) {
+        mpz_class x(m_float_value);
+        if (m_float_value == mpf_class(x)) {
           return MakeInteger(x);
         } else {
           return MakeError();
@@ -225,8 +229,8 @@ UntypedConstant UntypedConstant::ToInteger(UntypedConstant const & a_x) {
       }
     case kComplex:
       {
-        mpz_class x(a_x.m_complex_value.real());
-        if (a_x.m_complex_value == complex_t(x, 0)) {
+        mpz_class x(m_complex_value.real());
+        if (m_complex_value == complex_t(x, 0)) {
           return MakeInteger(x);
         } else {
           return MakeError();
@@ -450,7 +454,7 @@ UntypedConstant UntypedConstant::LeftShift(
     unsigned int a_y) {
   assert(a_x.IsInitialized());
 
-  UntypedConstant x = ToInteger(a_x);
+  UntypedConstant x = a_x.ToInteger();
 
   if (x.IsInteger()) {
     switch (x.m_kind) {
@@ -471,7 +475,7 @@ UntypedConstant UntypedConstant::RightShift(
     unsigned int a_y) {
   assert(a_x.IsInitialized());
 
-  UntypedConstant x = ToInteger(a_x);
+  UntypedConstant x = a_x.ToInteger();
 
   if (x.IsInteger()) {
     switch (x.m_kind) {

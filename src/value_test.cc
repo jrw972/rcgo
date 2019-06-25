@@ -2183,7 +2183,6 @@ TEST_CASE("Value::Modulo(Integer, Rune)") {
 // }
 
 TEST_CASE("Value::Modulo(Integer, 0)") {
-  std::stringstream ss;
   ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(0));
@@ -2193,52 +2192,66 @@ TEST_CASE("Value::Modulo(Integer, 0)") {
 }
 
 TEST_CASE("Value::LeftShift(Error, Error)") {
+  ErrorList el;
   Value x = Value::MakeError();
   Value y = Value::MakeError();
-  Value z = Value::LeftShift(&x, &y);
+  Value z = Value::LeftShift(&x, &y, &el);
   REQUIRE(z.IsError());
+  REQUIRE(el.empty());
 }
 
 TEST_CASE("Value::LeftShift(Boolean, Integer)") {
+  ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeBoolean(true));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(4));
-  Value z = Value::LeftShift(&x, &y);
+  Value z = Value::LeftShift(&x, &y, &el);
   REQUIRE(z.IsError());
+  REQUIRE(el.size() == 1);
 }
 
 TEST_CASE("Value::LeftShift(Integer, Boolean)") {
+  ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeBoolean(true));
-  Value z = Value::LeftShift(&x, &y);
+  Value z = Value::LeftShift(&x, &y, &el);
   REQUIRE(z.IsError());
+  REQUIRE(el.size() == 1);
 }
 
 TEST_CASE("Value::LeftShift(Integer, Integer)") {
+  ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(4));
-  Value z = Value::LeftShift(&x, &y);
+  Value z = Value::LeftShift(&x, &y, &el);
   REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(48)));
+  REQUIRE(el.empty());
 }
 
 TEST_CASE("Value::LeftShift(Integer, Rune)") {
+  ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeRune(4));
-  Value z = Value::LeftShift(&x, &y);
+  Value z = Value::LeftShift(&x, &y, &el);
   REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(48)));
+  REQUIRE(el.empty());
 }
 
 TEST_CASE("Value::LeftShift(Integer, Float)") {
+  ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeFloat(4));
-  Value z = Value::LeftShift(&x, &y);
+  Value z = Value::LeftShift(&x, &y, &el);
   REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(48)));
+  REQUIRE(el.empty());
 }
 
 TEST_CASE("Value::LeftShift(Integer, Complex)") {
+  ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeComplex(4, 0));
-  Value z = Value::LeftShift(&x, &y);
+  Value z = Value::LeftShift(&x, &y, &el);
   REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(48)));
+  REQUIRE(el.empty());
 }
 
 // TEST_CASE("Value::LeftShift(Integer, uint8)") {
@@ -2434,88 +2447,88 @@ TEST_CASE("Value::LeftShift(Integer, Complex)") {
 // }
 
 TEST_CASE("Value::LeftShift(Rune, Integer)") {
+  ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeRune(3));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(4));
-  Value z = Value::LeftShift(&x, &y);
+  Value z = Value::LeftShift(&x, &y, &el);
   REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(48)));
+  REQUIRE(el.empty());
 }
 
 TEST_CASE("Value::LeftShift(Float, Integer)") {
+  ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeFloat(3));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(4));
-  Value z = Value::LeftShift(&x, &y);
+  Value z = Value::LeftShift(&x, &y, &el);
   REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(48)));
+  REQUIRE(el.empty());
 }
 
 TEST_CASE("Value::LeftShift(Complex, Integer)") {
+  ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeComplex(3, 0));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(4));
-  Value z = Value::LeftShift(&x, &y);
+  Value z = Value::LeftShift(&x, &y, &el);
   REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(48)));
+  REQUIRE(el.empty());
 }
 
 TEST_CASE("Value::RightShift(Error, Error)") {
-  std::stringstream ss;
   ErrorList el;
   Value x = Value::MakeError();
   Value y = Value::MakeError();
-  Value z = Value::RightShift(Location(), &x, &y, &el);
+  Value z = Value::RightShift(&x, &y, &el);
   REQUIRE(z.IsError());
+  REQUIRE(el.empty());
 }
 
 TEST_CASE("Value::RightShift(Boolean, Integer)") {
-  std::stringstream ss;
   ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeBoolean(true));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(4));
-  Value z = Value::RightShift(Location(), &x, &y, &el);
+  Value z = Value::RightShift(&x, &y, &el);
   REQUIRE(z.IsError());
   REQUIRE(el.size() == 1);
 }
 
 TEST_CASE("Value::RightShift(Integer, Boolean)") {
-  std::stringstream ss;
   ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeBoolean(true));
-  Value z = Value::RightShift(Location(), &x, &y, &el);
+  Value z = Value::RightShift(&x, &y, &el);
   REQUIRE(z.IsError());
   REQUIRE(el.size() == 1);
 }
 
 TEST_CASE("Value::RightShift(Integer, Integer)") {
-  std::stringstream ss;
   ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(48));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(4));
-  Value z = Value::RightShift(Location(), &x, &y, &el);
+  Value z = Value::RightShift(&x, &y, &el);
   REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3)));
 }
 
 TEST_CASE("Value::RightShift(Integer, Rune)") {
-  std::stringstream ss;
   ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(48));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeRune(4));
-  Value z = Value::RightShift(Location(), &x, &y, &el);
+  Value z = Value::RightShift(&x, &y, &el);
   REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3)));
 }
 
 TEST_CASE("Value::RightShift(Integer, Float)") {
-  std::stringstream ss;
   ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(48));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeFloat(4));
-  Value z = Value::RightShift(Location(), &x, &y, &el);
+  Value z = Value::RightShift(&x, &y, &el);
   REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3)));
 }
 
 TEST_CASE("Value::RightShift(Integer, Complex)") {
-  std::stringstream ss;
   ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(48));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeComplex(4, 0));
-  Value z = Value::RightShift(Location(), &x, &y, &el);
+  Value z = Value::RightShift(&x, &y, &el);
   REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3)));
 }
 
@@ -2716,7 +2729,7 @@ TEST_CASE("Value::RightShift(Rune, Integer)") {
   ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeRune(48));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(4));
-  Value z = Value::RightShift(Location(), &x, &y, &el);
+  Value z = Value::RightShift(&x, &y, &el);
   REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3)));
 }
 
@@ -2725,7 +2738,7 @@ TEST_CASE("Value::RightShift(Float, Integer)") {
   ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeFloat(48));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(4));
-  Value z = Value::RightShift(Location(), &x, &y, &el);
+  Value z = Value::RightShift(&x, &y, &el);
   REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3)));
 }
 
@@ -2734,7 +2747,7 @@ TEST_CASE("Value::RightShift(Complex, Integer)") {
   ErrorList el;
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeComplex(48, 0));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(4));
-  Value z = Value::RightShift(Location(), &x, &y, &el);
+  Value z = Value::RightShift(&x, &y, &el);
   REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3)));
 }
 

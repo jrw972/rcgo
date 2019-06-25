@@ -154,6 +154,14 @@ struct ConvertVisitor : public type::DefaultVisitor {
     return mpz_class(to) == from;
   }
 
+  static bool exact_check(const mpz_class& from, long long to) {
+    return mpz_class(static_cast<signed long int>(to)) == from;
+  }
+
+  static bool exact_check(const mpz_class& from, unsigned long long to) {
+    return mpz_class(static_cast<unsigned long int>(to)) == from;
+  }
+
   template <typename T>
   static bool close_check(const mpf_class& from, T to) {
     if (from == 0) {
@@ -162,6 +170,23 @@ struct ConvertVisitor : public type::DefaultVisitor {
     mpf_class q = from / mpf_class(to);
     return q > .5 && q < 1.5;
   }
+
+  static bool close_check(const mpf_class& from, long long to) {
+    if (from == 0) {
+      return from == static_cast<signed long int>(to);
+    }
+    mpf_class q = from / mpf_class(static_cast<signed long int>(to));
+    return q > .5 && q < 1.5;
+  }
+
+  static bool close_check(const mpf_class& from, unsigned long long to) {
+    if (from == 0) {
+      return from == static_cast<unsigned long int>(to);
+    }
+    mpf_class q = from / mpf_class(static_cast<unsigned long int>(to));
+    return q > .5 && q < 1.5;
+  }
+
 
 #define CONVERT_TO_COMPLEX(Type, ValueMember, ValueType)                \
   void Visit(const Type&) override                                      \
@@ -498,7 +523,7 @@ UntypedConstant TypedConstant::ToUntypedConstant() const {
       value = UntypedConstant::MakeInteger(x.m_int32_value);
     }
     void Visit(const type::Int64&) override {
-      value = UntypedConstant::MakeInteger(x.m_int64_value);
+      value = UntypedConstant::MakeInteger(static_cast<signed long int>(x.m_int64_value));
     }
     void Visit(const type::Uint8&) override {
       value = UntypedConstant::MakeInteger(x.m_uint8_value);
@@ -510,7 +535,7 @@ UntypedConstant TypedConstant::ToUntypedConstant() const {
       value = UntypedConstant::MakeInteger(x.m_uint32_value);
     }
     void Visit(const type::Uint64&) override {
-      value = UntypedConstant::MakeInteger(x.m_uint64_value);
+      value = UntypedConstant::MakeInteger(static_cast<unsigned long int>(x.m_uint64_value));
     }
     void Visit(const type::Int&) override {
       value = UntypedConstant::MakeInteger(x.m_int_value);

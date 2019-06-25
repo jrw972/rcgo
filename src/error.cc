@@ -22,9 +22,9 @@ std::ostream& operator<< (std::ostream& out, Error const& error) {
 
 Error Perror(const std::string& prefix, int err) {
   char buf[256];
-  char* m = strerror_r(err, buf, 256);
+  strerror_r(err, buf, 256);
   Error error;
-  error.message << prefix << ": " << m << std::endl;
+  error.message << prefix << ": " << buf << std::endl;
   return error;
 }
 

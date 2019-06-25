@@ -163,6 +163,17 @@ bool Value::IsInteger() const {
   return false;
 }
 
+bool Value::IsIntegral() const {
+  if (m_kind == kUntypedConstant) {
+    return m_untyped_constant.IsIntegral();
+  }
+  const type::Type* t = type();
+  if (t) {
+    return type::IsInteger(t);
+  }
+  return false;
+}
+
 bool Value::IsZero() const {
   switch (m_kind) {
     case kUntypedConstant:
@@ -245,7 +256,7 @@ void Value::IsAssignableFrom(Value * lhs, Value * rhs) {
   if (rhs->m_kind == kUntypedConstant) {
     TypedConstant tc = TypedConstant::Make(lhs->type(), rhs->m_untyped_constant);
     if (tc.IsError()) {
-      *rhs == MakeError();
+      *rhs = MakeError();
       return;
     }
     *rhs = MakeTypedConstant(tc);
@@ -668,7 +679,7 @@ Value Value::LeftShift(Value* x, Value* y, ErrorList* error_list) {
     if (!x->IsRValueish()) {
       error_list->push_back(CannotBeUsedInAnExpression(x));
       x_error = true;
-    } else if (!x->IsInteger()) {
+    } else if (!x->IsIntegral()) {
       error_list->push_back(IsNotAnInteger(x));
       x_error = true;
     }
@@ -687,6 +698,7 @@ Value Value::LeftShift(Value* x, Value* y, ErrorList* error_list) {
         if (!yy.IsError()) {
           *y = yy;
         } else {
+          error_list->push_back(IsNotAnInteger(y));
           y_error = true;
         }
       } else if (!y->IsInteger()) {
@@ -730,6 +742,7 @@ Value Value::LeftShift(Value* x, Value* y, ErrorList* error_list) {
           // Convert to default integer type.
           TypedConstant xx = TypedConstant::Make(&type::Int64::instance, x->m_untyped_constant);
           if (xx.IsError()) {
+            error_list->push_back(CannotConvert(x, &type::Int64::instance));
             return MakeError();
           }
           return MakeRValue(&type::Int64::instance);
@@ -737,82 +750,92 @@ Value Value::LeftShift(Value* x, Value* y, ErrorList* error_list) {
       case Value::kTypedConstant:
         return MakeRValue(x->m_typed_constant.type());
       default:
-        return MakeError();
+        abort();
     }
   }
 }
 
-Value Value::RightShift(
-    Location const & location, Value * x, Value * y,
-    ErrorList* error_list) {
+Value Value::RightShift(Value* x, Value* y, ErrorList* error_list) {
   assert(x->IsInitialized());
   assert(y->IsInitialized());
 
-  if (x->IsError() || y->IsError()) {
-    return Value::MakeError();
+  bool x_error = false;
+  if (!x->IsError()) {
+    if (!x->IsRValueish()) {
+      error_list->push_back(CannotBeUsedInAnExpression(x));
+      x_error = true;
+    } else if (!x->IsIntegral()) {
+      error_list->push_back(IsNotAnInteger(x));
+      x_error = true;
+    }
+  } else {
+    x_error = true;
   }
 
-  if (y->IsConstant()) {
-    *y = ConvertConstant(*y, &type::Uint::instance);
-    if (y->IsError()) {
-      return Value::MakeError();
-    }
-    if (x->IsConstant()) {
-      unsigned int yyy = y->uint_value();
-      switch (x->m_kind) {
-        case Value::kUntypedConstant:
-          return MakeUntypedConstant(UntypedConstant::RightShift(x->m_untyped_constant, yyy));
-        case Value::kTypedConstant:
-          return MakeTypedConstant(TypedConstant::RightShift(x->m_typed_constant, yyy));
-          break;
-        default:
-          return MakeError();
-      }
+  bool y_error = false;
+  if (!y->IsError()) {
+    if (!y->IsRValueish()) {
+      error_list->push_back(CannotBeUsedInAnExpression(y));
+      y_error = true;
     } else {
-      // x is not constant.
-      switch (x->m_kind) {
-        case Value::kRValue:
-          if (type::IsInteger(x->m_type)) {
-            return MakeRValue(x->m_type);
-          }
-        default:
-          return MakeError();
+      if (y->IsConstant()) {
+        Value yy = ConvertConstant(*y, &type::Uint::instance);
+        if (!yy.IsError()) {
+          *y = yy;
+        } else {
+          error_list->push_back(IsNotAnInteger(y));
+          y_error = true;
+        }
+      } else if (!y->IsInteger()) {
+        error_list->push_back(IsNotAnInteger(y));
+        y_error = true;
       }
     }
   } else {
-    // y is not constant.
-    if (!type::IsInteger(y->m_type)) {
-      return MakeError();
-    }
+    y_error = true;
+  }
 
-    if (x->IsConstant()) {
-      switch (x->m_kind) {
-        case Value::kUntypedConstant:
-          {
-            // Convert to default integer type.
-            TypedConstant xx = TypedConstant::Make(&type::Int64::instance, x->m_untyped_constant);
-            if (xx.IsError()) {
-              return MakeError();
-            }
-            return MakeRValue(&type::Int64::instance);
+  if (x_error) {
+    return Value::MakeError();
+  }
+
+  if (x->m_kind == kRValue) {
+    return MakeRValue(x->type());
+  }
+
+  if (y_error) {
+    return Value::MakeError();
+  }
+
+  assert(x->IsConstant());
+
+  if (y->IsConstant()) {
+    unsigned int yyy = y->uint_value();
+    switch (x->m_kind) {
+      case Value::kUntypedConstant:
+        return MakeUntypedConstant(UntypedConstant::RightShift(x->m_untyped_constant, yyy));
+      case Value::kTypedConstant:
+        return MakeTypedConstant(TypedConstant::RightShift(x->m_typed_constant, yyy));
+      default:
+        abort();
+    }
+  } else {
+    // y is not constant.
+    switch (x->m_kind) {
+      case Value::kUntypedConstant:
+        {
+          // Convert to default integer type.
+          TypedConstant xx = TypedConstant::Make(&type::Int64::instance, x->m_untyped_constant);
+          if (xx.IsError()) {
+            error_list->push_back(CannotConvert(x, &type::Int64::instance));
+            return MakeError();
           }
-        case Value::kTypedConstant:
-          if (type::IsInteger(x->m_typed_constant.type())) {
-            return MakeRValue(x->m_typed_constant.type());
-          }
-        default:
-          return MakeError();
-      }
-    } else {
-      // x is not constant.
-      switch (x->m_kind) {
-        case Value::kRValue:
-          if (type::IsInteger(x->m_type)) {
-            return MakeRValue(x->m_type);
-          }
-        default:
-          return MakeError();
-      }
+          return MakeRValue(&type::Int64::instance);
+        }
+      case Value::kTypedConstant:
+        return MakeRValue(x->m_typed_constant.type());
+      default:
+        abort();
     }
   }
 }
@@ -981,8 +1004,15 @@ Value Value::Equal(
   }
 
   Promote(x, y);
-  if (x->IsError()) { return *x; }
-  if (y->IsError()) { return *y; }
+  std::cout << "After promote x=" << *x << " y=" << *y << std::endl;
+  if (x->IsError()) {
+      error_list->push_back(cannotApply2(location, "==", *x, *y));
+      return *x;
+  }
+  if (y->IsError()) {
+      error_list->push_back(cannotApply2(location, "==", *x, *y));
+      return *y;
+  }
 
   // TODO(jrw972):  Remove.
   x->Dereference();
@@ -998,6 +1028,7 @@ Value Value::Equal(
         return MakeRValue(type::Choose(x->m_type, y->m_type));
       }
     default:
+      error_list->push_back(cannotApply2(location, "==", *x, *y));
       return MakeError();
   }
 }
@@ -1202,6 +1233,18 @@ std::ostream& operator<<(std::ostream& out, const Value& value) {
 Error CannotBeUsedInAnExpression(Value const* x) {
   Error error;  // TODO(jrw972): Use location of x.
   error.message << "error: cannot be used in expression" << std::endl;
+  return error;
+}
+
+Error IsNotAnInteger(Value const* x) {
+  Error error;  // TODO(jrw972): Use location of x.
+  error.message << "error: is not an integer" << std::endl;
+  return error;
+}
+
+Error CannotConvert(Value const* x, type::Type const* type) {
+  Error error;  // TODO(jrw972): Use location of x.
+  error.message << "error: cannot convert " << *x << " to " << *type << std::endl;
   return error;
 }
 

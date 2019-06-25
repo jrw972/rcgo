@@ -452,6 +452,8 @@ bool IsString(const Type* x);
 bool IsBoolean(const Type* x);
 Type const * Choose(Type const * x, Type const * y);
 
+std::ostream& operator<< (std::ostream& out, type::Type const& type);
+
 }  // namespace type
 }  // namespace rcgo
 
