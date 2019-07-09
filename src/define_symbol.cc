@@ -80,7 +80,6 @@ bool DefineSymbol(
       if (idx >= ast->expression_list.size()) {
         // Value for the symbol indicates error.
         // Error has already been reported.
-        s->value(value::Value::MakeError());
         return;
       }
 

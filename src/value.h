@@ -31,7 +31,6 @@ namespace value {
 struct Value {
   enum Kind {
     kUninitialized,
-    kError,
 
     kFunction,  // TODO(jrw72): May be able to use kRValue instead.
     kLValue,
@@ -46,7 +45,6 @@ struct Value {
 
   Value();
 
-  static Value MakeError();
   static Value MakeUntypedConstant(UntypedConstant const & a_value);
   static Value MakeFunction(type::Function const* a_type);
   static Value MakeLValue(type::Type const* a_type);
@@ -132,6 +130,7 @@ struct Value {
                     std::vector<Value*> const & arguments,
                     LocationList const & locations,
                     ErrorList* error_list);
+    static void Assign(Value const* rhs, Value* lhs, ErrorList* error_list);
 
   bool operator==(Value const & y) const;
   bool operator!=(Value const & y) const;
@@ -149,7 +148,6 @@ struct Value {
   bool IsCallable() const;
   bool IsConstant() const;
   bool IsRValueish() const;
-  static void IsAssignableFrom(Value* lhs, Value* rhs);
 
   // Explicit conversions and checks.
   void Dereference();
@@ -168,9 +166,11 @@ struct Value {
 
 std::ostream& operator<<(std::ostream & out, value::Value const & value);
 
+Error NotAssignable(Value const* x);
 Error CannotBeUsedInAnExpression(Value const* x);
 Error IsNotAnInteger(Value const* x);
 Error CannotConvert(Value const* x, type::Type const* type);
+Error CannotAssign(Value const* lhs, Value const* rhs);
 
 }  // namespace value
 }  // namespace rcgo

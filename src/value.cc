@@ -68,9 +68,6 @@ Value::Value(Kind a_kind) : m_kind(a_kind), m_type(nullptr) {}
 
 Value Value::MakeUntypedConstant(UntypedConstant const & a_value) {
   assert(a_value.IsInitialized());
-  if (a_value.IsError()) {
-    return MakeError();
-  }
   Value v(kUntypedConstant);
   v.m_untyped_constant = a_value;
   return v;
@@ -165,7 +162,7 @@ bool Value::IsInteger() const {
 
 bool Value::IsIntegral() const {
   if (m_kind == kUntypedConstant) {
-    return m_untyped_constant.IsIntegral();
+      return m_untyped_constant.ToInteger().IsInitialized();
   }
   const type::Type* t = type();
   if (t) {
@@ -237,36 +234,41 @@ bool Value::IsRValueish() const {
   }
 }
 
-void Value::IsAssignableFrom(Value * lhs, Value * rhs) {
-  assert(lhs->IsInitialized());
-  assert(rhs->IsInitialized());
-  assert(!lhs->IsError());
-  assert(!rhs->IsError());
+    void Value::Assign(Value const* lhs, Value* rhs, ErrorList* error_list) {
+        bool left_okay = true;
+        bool right_okay = true;
+        if (lhs->IsInitialized()) {
+            if (lhs->m_kind != kLValue) {
+                error_list->push_back(NotAssignable(lhs));
+                left_okay = false;
+            }
+        }
 
-  if (lhs->m_kind != kLValue) {
-    *lhs = MakeError();
-    return;
-  }
+        if (rhs->IsInitialized()) {
+            if (!rhs->IsRValueish()) {
+                error_list->push_back(CannotBeUsedInAnExpression(rhs));
+                right_okay = false;
+            }
+        }
 
-  if (rhs->m_kind < kUntypedConstant) {
-    *rhs = MakeError();
-    return;
-  }
+        if (!left_okay || !right_okay) {
+            return;
+        }
 
-  if (rhs->m_kind == kUntypedConstant) {
-    TypedConstant tc = TypedConstant::Make(lhs->type(), rhs->m_untyped_constant);
-    if (tc.IsError()) {
-      *rhs = MakeError();
-      return;
+        if (rhs->m_kind == kUntypedConstant) {
+            TypedConstant tc = TypedConstant(lhs->type(), rhs->m_untyped_constant);
+            if (tc.IsInitialized()) {
+                *rhs = MakeTypedConstant(tc);
+            } else {
+                error_list->push_back(CannotConvert(rhs, lhs->type()));
+                return;
+            }
+        }
+
+        if (!type::Identical(lhs->type(), rhs->type())) {
+            error_list->push_back(CannotAssign(lhs, rhs));
+        }
     }
-    *rhs = MakeTypedConstant(tc);
-  }
-
-  if (!type::Identical(lhs->type(), rhs->type())) {
-    *rhs = MakeError();
-    return;
-  }
-}
 
 void Value::Dereference() {
   if (m_kind == kLValue) {
@@ -296,9 +298,9 @@ void Value::Promote(Value * a_x, Value * a_y) {
   }
 
   if (a_x->m_kind == kUntypedConstant && a_y->m_kind == kTypedConstant) {
-    *a_x = MakeTypedConstant(TypedConstant::Make(a_y->type(), a_x->m_untyped_constant));
+    *a_x = MakeTypedConstant(TypedConstant(a_y->type(), a_x->m_untyped_constant));
   } else if (a_x->m_kind == kUntypedConstant && a_y->m_kind == kRValue) {
-    *a_x = MakeTypedConstant(TypedConstant::Make(a_y->type(), a_x->m_untyped_constant));
+    *a_x = MakeTypedConstant(TypedConstant(a_y->type(), a_x->m_untyped_constant));
     if (a_x->IsError()) { return; }
     *a_x = MakeRValue(a_y->type());
   } else if (a_x->m_kind == kTypedConstant && a_y->m_kind == kRValue) {
@@ -318,10 +320,6 @@ bool Value::IsUninitialized() const {
 
 bool Value::IsInitialized() const {
   return m_kind != kUninitialized;
-}
-
-bool Value::IsError() const {
-  return m_kind == kError;
 }
 
 // TODO(jrw972):  Handle overflow and underflow.
@@ -345,8 +343,8 @@ Value Value::ConvertConstant(Value const & a_value,
     uc = a_value.m_typed_constant.ToUntypedConstant();
   }
 
-  TypedConstant tc = TypedConstant::Make(a_type, a_value.m_untyped_constant);
-  if (tc.IsError()) {
+  TypedConstant tc = TypedConstant(a_type, a_value.m_untyped_constant);
+  if (!tc.IsInitialized()) {
     return MakeError();
   }
   return MakeTypedConstant(tc);
@@ -740,8 +738,8 @@ Value Value::LeftShift(Value* x, Value* y, ErrorList* error_list) {
       case Value::kUntypedConstant:
         {
           // Convert to default integer type.
-          TypedConstant xx = TypedConstant::Make(&type::Int64::instance, x->m_untyped_constant);
-          if (xx.IsError()) {
+          TypedConstant xx = TypedConstant(&type::Int64::instance, x->m_untyped_constant);
+          if (!xx.IsInitialized()) {
             error_list->push_back(CannotConvert(x, &type::Int64::instance));
             return MakeError();
           }
@@ -825,8 +823,8 @@ Value Value::RightShift(Value* x, Value* y, ErrorList* error_list) {
       case Value::kUntypedConstant:
         {
           // Convert to default integer type.
-          TypedConstant xx = TypedConstant::Make(&type::Int64::instance, x->m_untyped_constant);
-          if (xx.IsError()) {
+          TypedConstant xx = TypedConstant(&type::Int64::instance, x->m_untyped_constant);
+          if (!xx.IsInitialized()) {
             error_list->push_back(CannotConvert(x, &type::Int64::instance));
             return MakeError();
           }
@@ -1004,7 +1002,6 @@ Value Value::Equal(
   }
 
   Promote(x, y);
-  std::cout << "After promote x=" << *x << " y=" << *y << std::endl;
   if (x->IsError()) {
       error_list->push_back(cannotApply2(location, "==", *x, *y));
       return *x;
@@ -1020,7 +1017,17 @@ Value Value::Equal(
 
   switch (x->m_kind) {
     case Value::kUntypedConstant:
-      return MakeUntypedConstant(UntypedConstant::Equal(x->m_untyped_constant, y->m_untyped_constant));
+    {
+        if (!UntypedConstant::AreComparable(x->m_untyped_constant, y->m_untyped_constant)) {
+            error_list->push_back(cannotApply2(location, "==", *x, *y));
+            return MakeError();
+        }
+      Value v = MakeUntypedConstant(UntypedConstant::Equal(x->m_untyped_constant, y->m_untyped_constant));
+      if (v.IsError()) {
+        error_list->push_back(cannotApply2(location, "==", *x, *y));
+      }
+      return v;
+    }
     case Value::kTypedConstant:
       return MakeUntypedConstant(TypedConstant::Equal(x->m_typed_constant, y->m_typed_constant));
     case Value::kRValue:
@@ -1101,8 +1108,6 @@ bool Value::operator==(const Value& y) const {
   switch (this->m_kind) {
     case Value::kUninitialized:
       return true;
-    case Value::kError:
-      return true;
     case Value::kUntypedConstant:
       return this->m_untyped_constant == y.m_untyped_constant;
     case Value::kTypedConstant:
@@ -1124,10 +1129,6 @@ bool Value::operator==(const Value& y) const {
 
 bool Value::operator!=(const Value& y) const {
   return !(*this == y);
-}
-
-Value Value::MakeError() {
-  return Value(kError);
 }
 
 std::ostream& operator<<(std::ostream& out, const Value& value) {
@@ -1195,9 +1196,6 @@ std::ostream& operator<<(std::ostream& out, const Value& value) {
   switch (value.kind()) {
     case Value::kUninitialized:
       out << "uninitialized";
-      break;
-    case Value::kError:
-      out << "error";
       break;
     case Value::kUntypedConstant:
       out << value.untyped_constant();

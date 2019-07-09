@@ -114,12 +114,6 @@ std::ostream& operator<<(std::ostream& out, const complex128_t& val) {
 
 TypedConstant::TypedConstant() : m_type(nullptr) {}
 
-TypedConstant TypedConstant::MakeError() {
-  TypedConstant tc;
-  tc.m_type = &type::Error::instance;
-  return tc;
-}
-
 struct ConvertVisitor : public type::DefaultVisitor {
   type::Type const * const type;
   UntypedConstant const & value;
@@ -135,8 +129,6 @@ struct ConvertVisitor : public type::DefaultVisitor {
     if (value.IsBoolean()) {
       result.m_type = type;
       result.m_bool_value = value.boolean_value();
-    } else {
-      result = TypedConstant::MakeError();
     }
   }
 
@@ -144,8 +136,6 @@ struct ConvertVisitor : public type::DefaultVisitor {
     if (value.IsString()) {
       result.m_type = type;
       result.m_string_value = value.string_value();
-    } else {
-      result = TypedConstant::MakeError();
     }
   }
 
@@ -198,8 +188,6 @@ struct ConvertVisitor : public type::DefaultVisitor {
         if (exact_check(value.integer_value(), v.real())) {             \
           result.m_type = type;                                         \
           result.ValueMember = v;                                       \
-        } else {                                                        \
-          result = TypedConstant::MakeError();                          \
         }                                                               \
         break;                                                          \
       case UntypedConstant::kRune:                                      \
@@ -207,8 +195,6 @@ struct ConvertVisitor : public type::DefaultVisitor {
         if (exact_check(value.rune_value(), v.real())) {                \
           result.m_type = type;                                         \
           result.ValueMember = v;                                       \
-        } else {                                                        \
-          result = TypedConstant::MakeError();                          \
         }                                                               \
         break;                                                          \
       case UntypedConstant::kFloat:                                     \
@@ -216,8 +202,6 @@ struct ConvertVisitor : public type::DefaultVisitor {
         if (close_check(value.float_value(), v.real())) {               \
           result.m_type = type;                                         \
           result.ValueMember = v;                                       \
-        } else {                                                        \
-          result = TypedConstant::MakeError();                          \
         }                                                               \
         break;                                                          \
       case UntypedConstant::kComplex:                                   \
@@ -228,12 +212,9 @@ struct ConvertVisitor : public type::DefaultVisitor {
             close_check(value.complex_value().imag(), v.imag())) {      \
           result.m_type = type;                                         \
           result.ValueMember = v;                                       \
-        } else {                                                        \
-          result = TypedConstant::MakeError();                          \
         }                                                               \
         break;                                                          \
       default:                                                          \
-        result = TypedConstant::MakeError();                            \
         break;                                                          \
     }                                                                   \
   }
@@ -251,8 +232,6 @@ struct ConvertVisitor : public type::DefaultVisitor {
         if (exact_check(value.integer_value(), v)) {            \
           result.m_type = type;                                 \
           result.ValueMember = v;                               \
-        } else {                                                \
-          result = TypedConstant::MakeError();                  \
         }                                                       \
         break;                                                  \
       case UntypedConstant::kRune:                              \
@@ -260,8 +239,6 @@ struct ConvertVisitor : public type::DefaultVisitor {
         if (exact_check(value.rune_value(), v)) {               \
           result.m_type = type;                                 \
           result.ValueMember = v;                               \
-        } else {                                                \
-          result = TypedConstant::MakeError();                  \
         }                                                       \
         break;                                                  \
       case UntypedConstant::kFloat:                             \
@@ -269,8 +246,6 @@ struct ConvertVisitor : public type::DefaultVisitor {
         if (close_check(value.float_value(), v)) {              \
           result.m_type = type;                                 \
           result.ValueMember = v;                               \
-        } else {                                                \
-          result = TypedConstant::MakeError();                  \
         }                                                       \
         break;                                                  \
       case UntypedConstant::kComplex:                           \
@@ -279,12 +254,9 @@ struct ConvertVisitor : public type::DefaultVisitor {
             value.complex_value().imag() == 0) {                \
           result.m_type = type;                                 \
           result.ValueMember = v;                               \
-        } else {                                                \
-          result = TypedConstant::MakeError();                  \
         }                                                       \
         break;                                                  \
       default:                                                  \
-        result = TypedConstant::MakeError();                    \
         break;                                                  \
     }                                                           \
   }
@@ -302,8 +274,6 @@ struct ConvertVisitor : public type::DefaultVisitor {
         if (exact_check(value.integer_value(), v)) {            \
           result.m_type = type;                                 \
           result.ValueMember = v;                               \
-        } else {                                                \
-          result = TypedConstant::MakeError();                  \
         }                                                       \
         break;                                                  \
       case UntypedConstant::kRune:                              \
@@ -311,8 +281,6 @@ struct ConvertVisitor : public type::DefaultVisitor {
         if (exact_check(value.rune_value(), v)) {               \
           result.m_type = type;                                 \
           result.ValueMember = v;                               \
-        } else {                                                \
-          result = TypedConstant::MakeError();                  \
         }                                                       \
         break;                                                  \
       case UntypedConstant::kFloat:                             \
@@ -320,8 +288,6 @@ struct ConvertVisitor : public type::DefaultVisitor {
         if (close_check(value.float_value(), v)) {              \
           result.m_type = type;                                 \
           result.ValueMember = v;                               \
-        } else {                                                \
-          result = TypedConstant::MakeError();                  \
         }                                                       \
         break;                                                  \
       case UntypedConstant::kComplex:                           \
@@ -330,12 +296,9 @@ struct ConvertVisitor : public type::DefaultVisitor {
             value.complex_value().imag() == 0) {                \
           result.m_type = type;                                 \
           result.ValueMember = v;                               \
-        } else {                                                \
-          result = TypedConstant::MakeError();                  \
         }                                                       \
         break;                                                  \
       default:                                                  \
-        result = TypedConstant::MakeError();                    \
         break;                                                  \
     }                                                           \
   }
@@ -356,8 +319,6 @@ struct ConvertVisitor : public type::DefaultVisitor {
         if (exact_check(value.integer_value(), v)) {            \
           result.m_type = type;                                 \
           result.ValueMember = v;                               \
-        } else {                                                \
-          result = TypedConstant::MakeError();                  \
         }                                                       \
         break;                                                  \
       case UntypedConstant::kRune:                              \
@@ -365,8 +326,6 @@ struct ConvertVisitor : public type::DefaultVisitor {
         if (exact_check(value.rune_value(), v)) {               \
           result.m_type = type;                                 \
           result.ValueMember = v;                               \
-        } else {                                                \
-          result = TypedConstant::MakeError();                  \
         }                                                       \
         break;                                                  \
       case UntypedConstant::kFloat:                             \
@@ -374,8 +333,6 @@ struct ConvertVisitor : public type::DefaultVisitor {
         if (close_check(value.float_value(), v)) {              \
           result.m_type = type;                                 \
           result.ValueMember = v;                               \
-        } else {                                                \
-          result = TypedConstant::MakeError();                  \
         }                                                       \
         break;                                                  \
       case UntypedConstant::kComplex:                           \
@@ -384,12 +341,9 @@ struct ConvertVisitor : public type::DefaultVisitor {
             value.complex_value().imag() == 0) {                \
           result.m_type = type;                                 \
           result.ValueMember = v;                               \
-        } else {                                                \
-          result = TypedConstant::MakeError();                  \
         }                                                       \
         break;                                                  \
       default:                                                  \
-        result = TypedConstant::MakeError();                    \
         break;                                                  \
     }                                                           \
   }
@@ -402,13 +356,12 @@ struct ConvertVisitor : public type::DefaultVisitor {
   CONVERT_TO_UINT(type::Uintptr, m_uintptr_value, unsigned int)
 };
 
-TypedConstant TypedConstant::Make(type::Type const * a_type,
+    TypedConstant::TypedConstant(type::Type const * a_type,
                                   UntypedConstant const & a_value) {
   assert(a_value.IsInitialized());
-  assert(!a_value.IsError());
   ConvertVisitor visitor(a_type, a_value);
   a_type->UnderlyingType()->Accept(&visitor);
-  return visitor.result;
+  *this = visitor.result;
 }
 
 bool TypedConstant::IsArithmetic() const {
@@ -487,16 +440,8 @@ bool TypedConstant::IsBoolean() const {
   return type::IsBoolean(m_type);
 }
 
-bool TypedConstant::IsUninitialized() const {
-  return m_type == nullptr;
-}
-
 bool TypedConstant::IsInitialized() const {
   return m_type != nullptr;
-}
-
-bool TypedConstant::IsError() const {
-  return IsInitialized() && m_type == &type::Error::instance;
 }
 
 UntypedConstant TypedConstant::ToUntypedConstant() const {
@@ -574,7 +519,7 @@ UntypedConstant TypedConstant::ToUntypedConstant() const {
 TypedConstant TypedConstant::Posate(TypedConstant const & x) {
   struct Visitor : public type::DefaultVisitor {
     explicit Visitor(TypedConstant const & a_x)
-        : x(a_x), value(TypedConstant::MakeError()) {}
+        : x(a_x) {}
 
     TypedConstant const & x;
     TypedConstant value;
@@ -641,7 +586,7 @@ TypedConstant TypedConstant::Posate(TypedConstant const & x) {
     }
   };
 
-  assert(x.IsInitialized());
+  assert(x.IsArithmetic());
   Visitor visitor(x);
   x.m_type->UnderlyingType()->Accept(&visitor);
   return visitor.value;
@@ -650,7 +595,7 @@ TypedConstant TypedConstant::Posate(TypedConstant const & x) {
 TypedConstant TypedConstant::Negate(TypedConstant const & x) {
   struct Visitor : public type::DefaultVisitor {
     explicit Visitor(TypedConstant const & a_x)
-        : x(a_x), value(TypedConstant::MakeError()) {}
+        : x(a_x) {}
 
     TypedConstant const & x;
     TypedConstant value;
@@ -717,7 +662,7 @@ TypedConstant TypedConstant::Negate(TypedConstant const & x) {
     }
   };
 
-  assert(x.IsInitialized());
+  assert(x.IsArithmetic());
   Visitor visitor(x);
   x.m_type->UnderlyingType()->Accept(&visitor);
   return visitor.value;
@@ -726,7 +671,7 @@ TypedConstant TypedConstant::Negate(TypedConstant const & x) {
 TypedConstant TypedConstant::LogicNot(TypedConstant const & x) {
   struct Visitor : public type::DefaultVisitor {
     explicit Visitor(TypedConstant const & a_x)
-        : x(a_x), value(TypedConstant::MakeError()) {}
+        : x(a_x) {}
 
     TypedConstant const & x;
     TypedConstant value;
@@ -737,7 +682,7 @@ TypedConstant TypedConstant::LogicNot(TypedConstant const & x) {
     }
   };
 
-  assert(x.IsInitialized());
+  assert(x.IsBoolean());
   Visitor visitor(x);
   x.m_type->UnderlyingType()->Accept(&visitor);
   return visitor.value;
@@ -746,7 +691,7 @@ TypedConstant TypedConstant::LogicNot(TypedConstant const & x) {
 TypedConstant TypedConstant::BitNot(TypedConstant const & x) {
   struct Visitor : public type::DefaultVisitor {
     explicit Visitor(TypedConstant const & a_x)
-        : x(a_x), value(TypedConstant::MakeError()) {}
+        : x(a_x) {}
 
     TypedConstant const & x;
     TypedConstant value;
@@ -797,7 +742,7 @@ TypedConstant TypedConstant::BitNot(TypedConstant const & x) {
     }
   };
 
-  assert(x.IsInitialized());
+  assert(x.IsInteger());
   Visitor visitor(x);
   x.m_type->UnderlyingType()->Accept(&visitor);
   return visitor.value;
@@ -806,7 +751,7 @@ TypedConstant TypedConstant::BitNot(TypedConstant const & x) {
 TypedConstant TypedConstant::Add(TypedConstant const & x, TypedConstant const & y) {
   struct Visitor : public type::DefaultVisitor {
     Visitor(TypedConstant const & a_x, TypedConstant const & a_y)
-        : x(a_x), y(a_y), value(TypedConstant::MakeError()) {}
+        : x(a_x), y(a_y) {}
 
     TypedConstant const & x;
     TypedConstant const & y;
@@ -878,12 +823,8 @@ TypedConstant TypedConstant::Add(TypedConstant const & x, TypedConstant const & 
     }
   };
 
-  assert(x.IsInitialized());
-  assert(y.IsInitialized());
-
-  if (!type::Identical(x.m_type, y.m_type)) {
-    return MakeError();
-  }
+  assert((x.IsArithmetic() && y.IsArithmetic()) || (x.IsString() && y.IsString()));
+  assert(type::Identical(x.m_type, y.m_type));
 
   Visitor visitor(x, y);
   x.m_type->UnderlyingType()->Accept(&visitor);
@@ -893,7 +834,7 @@ TypedConstant TypedConstant::Add(TypedConstant const & x, TypedConstant const & 
 TypedConstant TypedConstant::Subtract(TypedConstant const & x, TypedConstant const & y) {
   struct Visitor : public type::DefaultVisitor {
     Visitor(TypedConstant const & a_x, TypedConstant const & a_y)
-        : x(a_x), y(a_y), value(TypedConstant::MakeError()) {}
+        : x(a_x), y(a_y) {}
 
     TypedConstant const & x;
     TypedConstant const & y;
@@ -961,12 +902,8 @@ TypedConstant TypedConstant::Subtract(TypedConstant const & x, TypedConstant con
     }
   };
 
-  assert(x.IsInitialized());
-  assert(y.IsInitialized());
-
-  if (!type::Identical(x.m_type, y.m_type)) {
-    return MakeError();
-  }
+  assert(x.IsArithmetic() && y.IsArithmetic());
+  assert(type::Identical(x.m_type, y.m_type));
 
   Visitor visitor(x, y);
   x.m_type->UnderlyingType()->Accept(&visitor);
@@ -976,7 +913,7 @@ TypedConstant TypedConstant::Subtract(TypedConstant const & x, TypedConstant con
 TypedConstant TypedConstant::Multiply(TypedConstant const & x, TypedConstant const & y) {
   struct Visitor : public type::DefaultVisitor {
     Visitor(TypedConstant const & a_x, TypedConstant const & a_y)
-        : x(a_x), y(a_y), value(TypedConstant::MakeError()) {}
+        : x(a_x), y(a_y) {}
 
     TypedConstant const & x;
     TypedConstant const & y;
@@ -1044,12 +981,8 @@ TypedConstant TypedConstant::Multiply(TypedConstant const & x, TypedConstant con
     }
   };
 
-  assert(x.IsInitialized());
-  assert(y.IsInitialized());
-
-  if (!type::Identical(x.m_type, y.m_type)) {
-    return MakeError();
-  }
+  assert(x.IsArithmetic() && y.IsArithmetic());
+  assert(type::Identical(x.m_type, y.m_type));
 
   Visitor visitor(x, y);
   x.m_type->UnderlyingType()->Accept(&visitor);
@@ -1059,7 +992,7 @@ TypedConstant TypedConstant::Multiply(TypedConstant const & x, TypedConstant con
 TypedConstant TypedConstant::Divide(TypedConstant const & x, TypedConstant const & y) {
   struct Visitor : public type::DefaultVisitor {
     Visitor(TypedConstant const & a_x, TypedConstant const & a_y)
-        : x(a_x), y(a_y), value(TypedConstant::MakeError()) {}
+        : x(a_x), y(a_y) {}
 
     TypedConstant const & x;
     TypedConstant const & y;
@@ -1127,16 +1060,8 @@ TypedConstant TypedConstant::Divide(TypedConstant const & x, TypedConstant const
     }
   };
 
-  assert(x.IsInitialized());
-  assert(y.IsInitialized());
-
-  if (!type::Identical(x.m_type, y.m_type)) {
-    return MakeError();
-  }
-
-  if (y.IsZero()) {
-    return MakeError();
-  }
+  assert(x.IsArithmetic() && y.IsArithmetic() && !y.IsZero());
+  assert(type::Identical(x.m_type, y.m_type));
 
   Visitor visitor(x, y);
   x.m_type->UnderlyingType()->Accept(&visitor);
@@ -1146,7 +1071,7 @@ TypedConstant TypedConstant::Divide(TypedConstant const & x, TypedConstant const
 TypedConstant TypedConstant::Modulo(TypedConstant const & x, TypedConstant const & y) {
   struct Visitor : public type::DefaultVisitor {
     Visitor(TypedConstant const & a_x, TypedConstant const & a_y)
-        : x(a_x), y(a_y), value(TypedConstant::MakeError()) {}
+        : x(a_x), y(a_y) {}
 
     TypedConstant const & x;
     TypedConstant const & y;
@@ -1198,16 +1123,8 @@ TypedConstant TypedConstant::Modulo(TypedConstant const & x, TypedConstant const
     }
   };
 
-  assert(x.IsInitialized());
-  assert(y.IsInitialized());
-
-  if (!type::Identical(x.m_type, y.m_type)) {
-    return MakeError();
-  }
-
-  if (y.IsZero()) {
-    return MakeError();
-  }
+  assert(x.IsInteger() && y.IsInteger() && !y.IsZero());
+  assert(type::Identical(x.m_type, y.m_type));
 
   Visitor visitor(x, y);
   x.m_type->UnderlyingType()->Accept(&visitor);
@@ -1217,7 +1134,7 @@ TypedConstant TypedConstant::Modulo(TypedConstant const & x, TypedConstant const
 TypedConstant TypedConstant::LeftShift(TypedConstant const & x, unsigned int y) {
   struct Visitor : public type::DefaultVisitor {
     Visitor(TypedConstant const & a_x, unsigned int a_y)
-        : x(a_x) , y(a_y) , value(TypedConstant::MakeError()) {}
+        : x(a_x), y(a_y) {}
 
     TypedConstant const & x;
     unsigned int const y;
@@ -1269,7 +1186,7 @@ TypedConstant TypedConstant::LeftShift(TypedConstant const & x, unsigned int y) 
     }
   };
 
-  assert(x.IsInitialized());
+  assert(x.IsInteger());
 
   Visitor visitor(x, y);
   x.m_type->UnderlyingType()->Accept(&visitor);
@@ -1279,7 +1196,7 @@ TypedConstant TypedConstant::LeftShift(TypedConstant const & x, unsigned int y) 
 TypedConstant TypedConstant::RightShift(TypedConstant const & x, unsigned int y) {
   struct Visitor : public type::DefaultVisitor {
     Visitor(TypedConstant const & a_x, unsigned int a_y)
-        : x(a_x) , y(a_y) , value(TypedConstant::MakeError()) {}
+        : x(a_x), y(a_y) {}
 
     TypedConstant const & x;
     unsigned int const y;
@@ -1331,7 +1248,7 @@ TypedConstant TypedConstant::RightShift(TypedConstant const & x, unsigned int y)
     }
   };
 
-  assert(x.IsInitialized());
+  assert(x.IsInteger());
 
   Visitor visitor(x, y);
   x.m_type->UnderlyingType()->Accept(&visitor);
@@ -1341,7 +1258,7 @@ TypedConstant TypedConstant::RightShift(TypedConstant const & x, unsigned int y)
 TypedConstant TypedConstant::BitAnd(TypedConstant const & x, TypedConstant const & y) {
   struct Visitor : public type::DefaultVisitor {
     Visitor(TypedConstant const & a_x, TypedConstant const & a_y)
-        : x(a_x), y(a_y), value(TypedConstant::MakeError()) {}
+        : x(a_x), y(a_y) {}
 
     TypedConstant const & x;
     TypedConstant const & y;
@@ -1393,12 +1310,8 @@ TypedConstant TypedConstant::BitAnd(TypedConstant const & x, TypedConstant const
     }
   };
 
-  assert(x.IsInitialized());
-  assert(y.IsInitialized());
-
-  if (!type::Identical(x.m_type, y.m_type)) {
-    return MakeError();
-  }
+  assert(x.IsInteger() && y.IsInteger());
+  assert(type::Identical(x.m_type, y.m_type));
 
   Visitor visitor(x, y);
   x.m_type->UnderlyingType()->Accept(&visitor);
@@ -1408,7 +1321,7 @@ TypedConstant TypedConstant::BitAnd(TypedConstant const & x, TypedConstant const
 TypedConstant TypedConstant::BitAndNot(TypedConstant const & x, TypedConstant const & y) {
   struct Visitor : public type::DefaultVisitor {
     Visitor(TypedConstant const & a_x, TypedConstant const & a_y)
-        : x(a_x), y(a_y), value(TypedConstant::MakeError()) {}
+        : x(a_x), y(a_y) {}
 
     TypedConstant const & x;
     TypedConstant const & y;
@@ -1460,12 +1373,8 @@ TypedConstant TypedConstant::BitAndNot(TypedConstant const & x, TypedConstant co
     }
   };
 
-  assert(x.IsInitialized());
-  assert(y.IsInitialized());
-
-  if (!type::Identical(x.m_type, y.m_type)) {
-    return MakeError();
-  }
+  assert(x.IsInteger() && y.IsInteger());
+  assert(type::Identical(x.m_type, y.m_type));
 
   Visitor visitor(x, y);
   x.m_type->UnderlyingType()->Accept(&visitor);
@@ -1475,7 +1384,7 @@ TypedConstant TypedConstant::BitAndNot(TypedConstant const & x, TypedConstant co
 TypedConstant TypedConstant::BitOr(TypedConstant const & x, TypedConstant const & y) {
   struct Visitor : public type::DefaultVisitor {
     Visitor(TypedConstant const & a_x, TypedConstant const & a_y)
-        : x(a_x), y(a_y), value(TypedConstant::MakeError()) {}
+        : x(a_x), y(a_y) {}
 
     TypedConstant const & x;
     TypedConstant const & y;
@@ -1527,12 +1436,8 @@ TypedConstant TypedConstant::BitOr(TypedConstant const & x, TypedConstant const 
     }
   };
 
-  assert(x.IsInitialized());
-  assert(y.IsInitialized());
-
-  if (!type::Identical(x.m_type, y.m_type)) {
-    return MakeError();
-  }
+  assert(x.IsInteger() && y.IsInteger());
+  assert(type::Identical(x.m_type, y.m_type));
 
   Visitor visitor(x, y);
   x.m_type->UnderlyingType()->Accept(&visitor);
@@ -1542,7 +1447,7 @@ TypedConstant TypedConstant::BitOr(TypedConstant const & x, TypedConstant const 
 TypedConstant TypedConstant::BitXor(TypedConstant const & x, TypedConstant const & y) {
   struct Visitor : public type::DefaultVisitor {
     Visitor(TypedConstant const & a_x, TypedConstant const & a_y)
-        : x(a_x), y(a_y), value(TypedConstant::MakeError()) {}
+        : x(a_x), y(a_y) {}
 
     TypedConstant const & x;
     TypedConstant const & y;
@@ -1594,12 +1499,8 @@ TypedConstant TypedConstant::BitXor(TypedConstant const & x, TypedConstant const
     }
   };
 
-  assert(x.IsInitialized());
-  assert(y.IsInitialized());
-
-  if (!type::Identical(x.m_type, y.m_type)) {
-    return MakeError();
-  }
+  assert(x.IsInteger() && y.IsInteger());
+  assert(type::Identical(x.m_type, y.m_type));
 
   Visitor visitor(x, y);
   x.m_type->UnderlyingType()->Accept(&visitor);
@@ -1609,7 +1510,7 @@ TypedConstant TypedConstant::BitXor(TypedConstant const & x, TypedConstant const
 UntypedConstant TypedConstant::Equal(TypedConstant const & x, TypedConstant const & y) {
   struct Visitor : public type::DefaultVisitor {
     Visitor(TypedConstant const & a_x, TypedConstant const & a_y)
-        : x(a_x) , y(a_y), flag(UntypedConstant::MakeError()) {}
+        : x(a_x) , y(a_y) {}
 
     TypedConstant const & x;
     TypedConstant const & y;
@@ -1672,7 +1573,7 @@ UntypedConstant TypedConstant::Equal(TypedConstant const & x, TypedConstant cons
   assert(y.IsInitialized());
 
   if (!type::Identical(x.m_type, y.m_type)) {
-    return UntypedConstant::MakeError();
+    return UntypedConstant();
   }
 
   Visitor visitor(x, y);

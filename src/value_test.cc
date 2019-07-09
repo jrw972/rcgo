@@ -2451,7 +2451,7 @@ TEST_CASE("Value::LeftShift(Rune, Integer)") {
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeRune(3));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(4));
   Value z = Value::LeftShift(&x, &y, &el);
-  REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(48)));
+  REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeRune(48)));
   REQUIRE(el.empty());
 }
 
@@ -2730,7 +2730,7 @@ TEST_CASE("Value::RightShift(Rune, Integer)") {
   Value x = Value::MakeUntypedConstant(UntypedConstant::MakeRune(48));
   Value y = Value::MakeUntypedConstant(UntypedConstant::MakeInteger(4));
   Value z = Value::RightShift(&x, &y, &el);
-  REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeInteger(3)));
+  REQUIRE(z == Value::MakeUntypedConstant(UntypedConstant::MakeRune(3)));
 }
 
 TEST_CASE("Value::RightShift(Float, Integer)") {

@@ -81,14 +81,11 @@ void CheckTypes(ast::Node* node, Block* block, type::Factory* type_factory,
       symbol::Symbol* symbol = block->FindGlobalSymbol(ast->identifier);
       if (symbol == nullptr) {
         error_list->push_back(NotDeclared(ast->location, ast->identifier));
-        ast->computed_value(value::Value::MakeError());
         return;
       }
 
       if (DefineSymbol(symbol, block, type_factory, error_list)) {
         ast->computed_value(symbol->GetValue());
-      } else {
-        ast->computed_value(value::Value::MakeError());
       }
     }
 
